@@ -63,13 +63,13 @@ export default function CreateAssessmentPage() {
     const [joinLink, setJoinLink] = useState("");
 
     const [securityLevel, setSecurityLevel] = useState("high");
-    const [identityVerification, setIdentityVerification] = useState(true);
-    const [primaryCamera, setPrimaryCamera] = useState(true);
-    const [secondaryCamera, setSecondaryCamera] = useState(true);
-    const [browserLock, setBrowserLock] = useState(true);
+    const [identityVerification, setIdentityVerification] = useState(false);
+    const [primaryCamera, setPrimaryCamera] = useState(false);
+    const [secondaryCamera, setSecondaryCamera] = useState(false);
+    const [browserLock, setBrowserLock] = useState(false);
     const [tabDetection, setTabDetection] = useState(true);
-    const [audioMonitoring, setAudioMonitoring] = useState(true);
-    const [aiProctoring, setAiProctoring] = useState(true);
+    const [audioMonitoring, setAudioMonitoring] = useState(false);
+    const [aiProctoring, setAiProctoring] = useState(false);
 
     type SelectedQuestion = {
         id: string;
@@ -542,20 +542,12 @@ export default function CreateAssessmentPage() {
 
                                 <div className="space-y-4 p-5">
                                     <SecurityItem
-                                        icon={<ShieldCheck size={15} />}
-                                        title="Identity Verification"
-                                    />
-                                    <SecurityItem
                                         icon={<Users size={15} />}
-                                        title="Dual Camera AI Proctoring"
+                                        title="Proctoring Event Tracking"
                                     />
                                     <SecurityItem
                                         icon={<Lock size={15} />}
-                                        title="Strict Browser Lock"
-                                    />
-                                    <SecurityItem
-                                        icon={<Zap size={15} />}
-                                        title="Audio Analysis"
+                                        title="Tab Activity Tracking"
                                     />
                                 </div>
 
@@ -807,40 +799,36 @@ export default function CreateAssessmentPage() {
                                     icon={<ShieldCheck size={18} />}
                                     title="Identity Verification"
                                     description="Verify participant identity before starting"
-                                    enabled={identityVerification}
-                                    onClick={() =>
-                                        setIdentityVerification(!identityVerification)
-                                    }
+                                    enabled={false}
+                                    onClick={() => {}}
+                                    implemented={false}
                                 />
 
                                 <SecurityToggle
                                     icon={<Users size={18} />}
                                     title="Primary Camera"
-                                    description="Monitor participant through webcam"
-                                    enabled={primaryCamera}
-                                    onClick={() =>
-                                        setPrimaryCamera(!primaryCamera)
-                                    }
+                                    description="Monitors hardware availability only"
+                                    enabled={false}
+                                    onClick={() => {}}
+                                    implemented={false}
                                 />
 
                                 <SecurityToggle
                                     icon={<Users size={18} />}
                                     title="Secondary Camera"
                                     description="Use a mobile device as second camera"
-                                    enabled={secondaryCamera}
-                                    onClick={() =>
-                                        setSecondaryCamera(!secondaryCamera)
-                                    }
+                                    enabled={false}
+                                    onClick={() => {}}
+                                    implemented={false}
                                 />
 
                                 <SecurityToggle
                                     icon={<Zap size={18} />}
                                     title="AI Proctoring"
                                     description="Detect suspicious participant behaviour"
-                                    enabled={aiProctoring}
-                                    onClick={() =>
-                                        setAiProctoring(!aiProctoring)
-                                    }
+                                    enabled={false}
+                                    onClick={() => {}}
+                                    implemented={false}
                                 />
 
                             </div>
@@ -859,10 +847,9 @@ export default function CreateAssessmentPage() {
                                     icon={<Lock size={18} />}
                                     title="Strict Browser Lock"
                                     description="Prevent leaving the assessment window"
-                                    enabled={browserLock}
-                                    onClick={() =>
-                                        setBrowserLock(!browserLock)
-                                    }
+                                    enabled={false}
+                                    onClick={() => {}}
+                                    implemented={false}
                                 />
 
                                 <SecurityToggle
@@ -877,18 +864,17 @@ export default function CreateAssessmentPage() {
 
                                 <SecurityToggle
                                     icon={<Zap size={18} />}
-                                    title="Audio Monitoring"
-                                    description="Analyze microphone activity for anomalies"
-                                    enabled={audioMonitoring}
-                                    onClick={() =>
-                                        setAudioMonitoring(!audioMonitoring)
-                                    }
+                                    title="Microphone Check"
+                                    description="Monitors hardware availability only"
+                                    enabled={false}
+                                    onClick={() => {}}
+                                    implemented={false}
                                 />
 
                                 <SecurityToggle
                                     icon={<ShieldCheck size={18} />}
-                                    title="Incident Detection"
-                                    description="Automatically flag suspicious events"
+                                    title="Proctoring Event Tracking"
+                                    description="Records tab, focus, fullscreen and network activity."
                                     enabled={true}
                                     onClick={() => { }}
                                 />
@@ -1190,7 +1176,7 @@ export default function CreateAssessmentPage() {
                                 />
 
                                 <SecurityStatus
-                                    title="Incident Detection"
+                                    title="Proctoring Event Tracking"
                                     enabled={true}
                                 />
                             </div>
@@ -1438,21 +1424,26 @@ function SecurityToggle({
     description,
     enabled,
     onClick,
+    implemented = true,
 }: {
     icon: React.ReactNode;
     title: string;
     description: string;
     enabled: boolean;
     onClick: () => void;
+    implemented?: boolean;
 }) {
     return (
         <button
-            onClick={onClick}
+            onClick={implemented ? onClick : undefined}
+            disabled={!implemented}
             className={[
                 "flex w-full items-center justify-between rounded-xl border p-5 text-left transition",
-                enabled
-                    ? "border-black/10 bg-white"
-                    : "border-black/10 bg-black/[0.02] opacity-60",
+                !implemented
+                    ? "border-black/5 bg-black/[0.02] opacity-50 cursor-not-allowed"
+                    : enabled
+                        ? "border-black/10 bg-white"
+                        : "border-black/10 bg-black/[0.02] opacity-60",
             ].join(" ")}
         >
             <div className="flex items-start gap-4">
@@ -1469,8 +1460,13 @@ function SecurityToggle({
                 </div>
 
                 <div>
-                    <div className="text-sm font-semibold">
+                    <div className="text-sm font-semibold flex items-center gap-2">
                         {title}
+                        {!implemented && (
+                            <span className="rounded-full bg-black/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black/60">
+                                Coming Soon
+                            </span>
+                        )}
                     </div>
 
                     <div className="mt-1 text-xs text-black/45">
@@ -1483,7 +1479,7 @@ function SecurityToggle({
             <span
                 className={[
                     "relative h-5 w-9 shrink-0 rounded-full transition",
-                    enabled
+                    enabled && implemented
                         ? "bg-[#f15b1f]"
                         : "bg-black/15",
                 ].join(" ")}
@@ -1491,7 +1487,7 @@ function SecurityToggle({
                 <span
                     className={[
                         "absolute top-0.5 h-4 w-4 rounded-full bg-white transition",
-                        enabled
+                        enabled && implemented
                             ? "left-[18px]"
                             : "left-0.5",
                     ].join(" ")}
