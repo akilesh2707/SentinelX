@@ -4,12 +4,18 @@ import { useState, useEffect } from "react";
 import { Clock, ChevronLeft, ChevronRight, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProctoringEngine } from "./use-proctoring-engine";
+import { useMediaProctoring } from "./use-media-proctoring";
+import { Camera, Mic, MicOff, VideoOff } from "lucide-react";
 
 type AttemptState = {
     id: string;
     status: string;
     startedAt: string | null;
     expiresAt: string | null;
+    assessment: {
+        primaryCamera: boolean;
+        audioMonitoring: boolean;
+    };
 };
 
 type Option = {
@@ -59,6 +65,8 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
 
     const { recordEvent } = useProctoringEngine({ attemptId: attempt.id, status: attempt.status });
 
+
+
     // Maps attemptQuestionId to answer value (optionId or code string)
     const [localAnswers, setLocalAnswers] = useState<Record<string, string>>({});
     // Tracks save status per attemptQuestionId
@@ -71,6 +79,15 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
     const [customInput, setCustomInput] = useState<Record<string, string>>({});
     const [executionResult, setExecutionResult] = useState<Record<string, any>>({});
     const [isRunning, setIsRunning] = useState<Record<string, boolean>>({});
+
+    const isExamActive = attempt.status === "IN_PROGRESS" && !submitResult && timeLeft !== 0;
+
+    const { stream, cameraStatus, micStatus } = useMediaProctoring({
+        requiresCamera: attempt.assessment.primaryCamera,
+        requiresMic: attempt.assessment.audioMonitoring,
+        isActive: isExamActive,
+        recordEvent
+    });
 
     useEffect(() => {
         let isMounted = true;
@@ -415,6 +432,44 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
                         })}
                     </div>
                 </div>
+                
+                {/* Media Preview Section */}
+                {(attempt.assessment.primaryCamera || attempt.assessment.audioMonitoring) && (
+                    <div className="p-4 border-t border-[#303433] bg-[#2d2d2d] mt-auto">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-[#a0a19b] uppercase tracking-wider">Monitoring</span>
+                            <div className="flex gap-2">
+                                {attempt.assessment.audioMonitoring && (
+                                    micStatus === "ready" ? <Mic size={14} className="text-emerald-400" /> : <MicOff size={14} className="text-red-400" />
+                                )}
+                                {attempt.assessment.primaryCamera && (
+                                    cameraStatus === "ready" ? <Camera size={14} className="text-emerald-400" /> : <VideoOff size={14} className="text-red-400" />
+                                )}
+                            </div>
+                        </div>
+                        {attempt.assessment.primaryCamera && (
+                            <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-[#303433] relative">
+                                {cameraStatus === "ready" && stream ? (
+                                    <video 
+                                        autoPlay 
+                                        playsInline 
+                                        muted 
+                                        className="w-full h-full object-cover scale-x-[-1]"
+                                        ref={(video) => {
+                                            if (video && video.srcObject !== stream) {
+                                                video.srcObject = stream;
+                                            }
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full w-full text-[#a0a19b] text-xs">
+                                        {cameraStatus === "loading" ? "Starting camera..." : "Camera unavailable"}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </aside>
 
             {/* Main Question Area */}

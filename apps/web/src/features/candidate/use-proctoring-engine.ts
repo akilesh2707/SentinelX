@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 
-type ProctoringEventType =
+export type ProctoringEventType =
     | "TAB_SWITCH"
     | "WINDOW_BLUR"
     | "FULLSCREEN_EXIT"

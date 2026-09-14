@@ -33,6 +33,8 @@ export default async function ExamPage(props: ExamPageProps) {
                     title: true,
                     duration: true,
                     totalMarks: true,
+                    primaryCamera: true,
+                    audioMonitoring: true,
                 },
             },
             // Just counting the questions for UI context, not returning the actual content

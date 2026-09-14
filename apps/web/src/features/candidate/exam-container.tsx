@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ShieldCheck, Clock, FileText, Loader2, AlertCircle } from "lucide-react";
 import { ExamInterface } from "./exam-interface";
 import { useRouter } from "next/navigation";
+import { MediaPreflight } from "./media-preflight";
 
 type ExamContainerProps = {
     initialAttempt: {
@@ -12,7 +13,7 @@ type ExamContainerProps = {
         startedAt: Date | null;
         expiresAt: Date | null;
         candidate: { name: string; email: string };
-        assessment: { title: string; duration: number; totalMarks: number };
+        assessment: { title: string; duration: number; totalMarks: number; primaryCamera: boolean; audioMonitoring: boolean };
         _count: { questions: number };
     };
 };
@@ -22,6 +23,10 @@ export function ExamContainer({ initialAttempt }: ExamContainerProps) {
     const [attempt, setAttempt] = useState(initialAttempt);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isMediaReady, setIsMediaReady] = useState(true);
+
+    const requiresCamera = attempt.assessment.primaryCamera;
+    const requiresMic = attempt.assessment.audioMonitoring;
 
     const handleStart = async () => {
         setLoading(true);
@@ -62,6 +67,10 @@ export function ExamContainer({ initialAttempt }: ExamContainerProps) {
             status: attempt.status,
             startedAt: attempt.startedAt ? attempt.startedAt.toISOString() : null,
             expiresAt: attempt.expiresAt ? attempt.expiresAt.toISOString() : null,
+            assessment: {
+                primaryCamera: attempt.assessment.primaryCamera,
+                audioMonitoring: attempt.assessment.audioMonitoring,
+            }
         }} />;
     }
 
@@ -98,6 +107,12 @@ export function ExamContainer({ initialAttempt }: ExamContainerProps) {
                     </div>
                 )}
 
+                <MediaPreflight 
+                    requiresCamera={requiresCamera}
+                    requiresMic={requiresMic}
+                    onReadyStatusChange={setIsMediaReady}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div className="rounded-xl border border-[#dedbd2] p-4 bg-white text-center">
                         <Clock size={20} className="mx-auto mb-2 text-[#555955]" />
@@ -119,8 +134,8 @@ export function ExamContainer({ initialAttempt }: ExamContainerProps) {
                 <div className="text-center">
                     <button
                         onClick={handleStart}
-                        disabled={loading}
-                        className="bg-orange-500 text-[#171a1b] font-semibold px-8 py-3 rounded-lg hover:bg-orange-400 transition-colors inline-flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        disabled={loading || !isMediaReady}
+                        className="bg-orange-500 text-[#171a1b] font-semibold px-8 py-3 rounded-lg hover:bg-orange-400 transition-colors inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? <><Loader2 size={18} className="animate-spin" /> Starting...</> : "Start Assessment"}
                     </button>
