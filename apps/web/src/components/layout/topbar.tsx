@@ -122,7 +122,7 @@ export function Topbar({
 
                 {/* Logout */}
                 <button
-                    onClick={() => signOut()}
+                    onClick={() => signOut({ redirectTo: "/" })}
                     className="ml-2 rounded-md p-2 text-text-dark/60 transition hover:bg-red-50 hover:text-red-500"
                     title="Sign Out"
                 >
