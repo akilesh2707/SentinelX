@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Assessment {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  type        String
+
+  mcqCount     Int    @default(0)
+  codingCount  Int    @default(0)
+  totalMarks   Int
+  passingScore Int
+  difficulty   String
+  duration     Int
+
+  maxAttempts        String  @default("1")
+  lateJoin           Boolean @default(true)
+  autoSubmit         Boolean @default(true)
+  randomizeQuestions Boolean @default(true)
+  negativeMarking    Boolean @default(false)
+
+  securityLevel        String  @default("high")
+  identityVerification Boolean @default(true)
+  primaryCamera        Boolean @default(true)
+  secondaryCamera      Boolean @default(true)
+  browserLock          Boolean @default(true)
+  tabDetection         Boolean @default(true)
+  audioMonitoring      Boolean @default(true)
+  aiProctoring         Boolean @default(true)
+
+  accessCode String @unique
+  joinLink   String
+
+  status String @default("DRAFT")
+
+  questions        AssessmentQuestion[]
+  attempts         AssessmentAttempt[]
+  eventAssessments EventAssessment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum QuestionType {
+  MCQ
+  CODING
+}
+
+model Question {
+  id   String       @id @default(cuid())
+  type QuestionType
+
+  title        String
+  description  String?
+  topic        String?
+  difficulty   String
+  defaultMarks Int
+  explanation  String?
+
+  starterCode  String?
+  inputFormat  String?
+  outputFormat String?
+  constraints  String?
+
+  options          QuestionOption[]
+  testCases        CodingTestCase[]
+  assessments      AssessmentQuestion[]
+  attemptQuestions AttemptQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  optionKey  String
+  text       String
+  isCorrect  Boolean @default(false)
+  order      Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model CodingTestCase {
+  id         String @id @default(cuid())
+  questionId String
+
+  input          String
+  expectedOutput String
+  isHidden       Boolean @default(true)
+  marks          Int
+  order          Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model AssessmentQuestion {
+  id           String @id @default(cuid())
+  assessmentId String
+  questionId   String
+
+  marks    Int
+  order    Int
+  required Boolean @default(true)
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId, order])
+}
+
+enum AttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+  ABANDONED
+}
+
+model Candidate {
+  id    String  @id @default(cuid())
+  name  String
+  email String
+  phone String?
+
+  attempts AssessmentAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+model AssessmentAttempt {
+  id           String @id @default(cuid())
+  candidateId  String
+  assessmentId String
+
+  status AttemptStatus @default(NOT_STARTED)
+
+  startedAt   DateTime?
+  expiresAt   DateTime?
+  submittedAt DateTime?
+
+  score    Int?
+  maxScore Int?
+
+  candidate  Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  questions AttemptQuestion[]
+  proctoringEvents ProctoringEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([assessmentId])
+  @@index([assessmentId, status])
+}
+
+model AttemptQuestion {
+  id         String @id @default(cuid())
+  attemptId  String
+  questionId String
+
+  order    Int
+  marks    Int
+  answered Boolean @default(false)
+  visited  Boolean @default(false)
+
+  attempt  AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question          @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  answer Answer?
+
+  createdAt DateTime @default(now())
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId, order])
+}
+
+model Answer {
+  id                String @id @default(cuid())
+  attemptQuestionId String @unique
+
+  selectedOptionId String?
+  submittedCode    String?
+  language         String?
+
+  score      Int?
+  isCorrect  Boolean?
+  answeredAt DateTime?
+
+  attemptQuestion AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  status String @default("DRAFT")
+
+  assessments EventAssessment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventAssessment {
+  id           String @id @default(cuid())
+  eventId      String
+  assessmentId String
+
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, assessmentId])
+  @@index([eventId])
+  @@index([assessmentId])
+}
+
+model Organizer {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ProctoringEventType {
+  TAB_SWITCH
+  WINDOW_BLUR
+  FULLSCREEN_EXIT
+  NETWORK_DISCONNECT
+  NETWORK_RECONNECT
+  PAGE_RELOAD
+  CAMERA_UNAVAILABLE
+  MICROPHONE_UNAVAILABLE
+  EXAM_STARTED
+  EXAM_SUBMITTED
+}
+
+model ProctoringEvent {
+  id              String              @id @default(cuid())
+  attemptId       String
+  eventType       ProctoringEventType
+  timestamp       DateTime
+  clientTimestamp DateTime
+  metadata        Json?
+
+  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([attemptId, timestamp])
+}

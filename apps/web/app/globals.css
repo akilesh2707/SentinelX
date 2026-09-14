@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+:root {
+  --sx-carbon: #101313;
+  --sx-graphite: #171a1a;
+  --sx-surface: #1d2121;
+
+  --sx-paper: #f4f0e8;
+  --sx-paper-soft: #eae5db;
+
+  --sx-orange: #f26b21;
+  --sx-orange-dark: #c94f0d;
+
+  --sx-safe: #35b88a;
+  --sx-warning: #e5a93d;
+  --sx-critical: #e05252;
+  --sx-info: #5b9bd5;
+
+  --sx-text-primary: #f4f0e8;
+  --sx-text-secondary: #a8aeab;
+  --sx-text-dark: #171a1a;
+
+  --sx-border: #303535;
+  --sx-border-light: #d7d1c6;
+}
+
+@theme inline {
+  --color-carbon: var(--sx-carbon);
+  --color-graphite: var(--sx-graphite);
+  --color-surface: var(--sx-surface);
+
+  --color-paper: var(--sx-paper);
+  --color-paper-soft: var(--sx-paper-soft);
+
+  --color-signal: var(--sx-orange);
+  --color-signal-dark: var(--sx-orange-dark);
+
+  --color-safe: var(--sx-safe);
+  --color-warning: var(--sx-warning);
+  --color-critical: var(--sx-critical);
+  --color-info: var(--sx-info);
+
+  --color-text-primary: var(--sx-text-primary);
+  --color-text-secondary: var(--sx-text-secondary);
+  --color-text-dark: var(--sx-text-dark);
+
+  --color-border: var(--sx-border);
+  --color-border-light: var(--sx-border-light);
+
+  --font-sans: var(--font-sora);
+  --font-mono: var(--font-plex-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--sx-carbon);
+  color: var(--sx-text-primary);
+  font-family: var(--font-sora), sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none transition;
+  }
+
+  .input:focus {
+    @apply border-[#f15b1f] ring-2 ring-[#f15b1f]/10;
+  }
+}
