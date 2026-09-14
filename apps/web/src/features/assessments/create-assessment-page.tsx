@@ -15,7 +15,9 @@ import {
     ShieldCheck,
     Users,
     Zap,
+    Search,
 } from "lucide-react";
+import { useEffect } from "react";
 
 const steps = [
     "Details",
@@ -69,15 +71,70 @@ export default function CreateAssessmentPage() {
     const [audioMonitoring, setAudioMonitoring] = useState(true);
     const [aiProctoring, setAiProctoring] = useState(true);
 
-    const [mcqCount, setMcqCount] = useState(20);
-    const [codingCount, setCodingCount] = useState(2);
-    const [totalMarks, setTotalMarks] = useState(100);
+    type SelectedQuestion = {
+        id: string;
+        type: string;
+        title: string;
+        difficulty: string;
+        marks: number;
+        order: number;
+    };
+
+    const [questionsBank, setQuestionsBank] = useState<any[]>([]);
+    const [selectedQuestions, setSelectedQuestions] = useState<SelectedQuestion[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+
+    useEffect(() => {
+        const fetchQuestions = async () => {
+            setIsLoadingQuestions(true);
+            try {
+                const res = await fetch("/api/questions");
+                const data = await res.json();
+                if (data.success) {
+                    setQuestionsBank(data.questions);
+                }
+            } catch (error) {
+                console.error("Failed to fetch questions", error);
+            }
+            setIsLoadingQuestions(false);
+        };
+        fetchQuestions();
+    }, []);
+
+    const mcqCount = selectedQuestions.filter(q => q.type === "MCQ").length;
+    const codingCount = selectedQuestions.filter(q => q.type === "CODING").length;
+    const totalMarks = selectedQuestions.reduce((sum, q) => sum + q.marks, 0);
+
+    const handleToggleQuestion = (q: any) => {
+        setSelectedQuestions(prev => {
+            const exists = prev.find(item => item.id === q.id);
+            if (exists) {
+                return prev.filter(item => item.id !== q.id).map((item, idx) => ({ ...item, order: idx }));
+            } else {
+                return [...prev, {
+                    id: q.id,
+                    type: q.type,
+                    title: q.title,
+                    difficulty: q.difficulty,
+                    marks: q.defaultMarks,
+                    order: prev.length
+                }];
+            }
+        });
+    };
+
     const [passingScore, setPassingScore] = useState(40);
     const [difficulty, setDifficulty] = useState("Medium");
     const [randomizeQuestions, setRandomizeQuestions] = useState(true);
     const [negativeMarking, setNegativeMarking] = useState(false);
 
     const handlePublish = async () => {
+        if (selectedQuestions.length === 0) {
+            alert("Please select at least one question from the Question Bank.");
+            return;
+        }
+
         try {
             const response = await fetch("/api/assessments", {
                 method: "POST",
@@ -110,6 +167,12 @@ export default function CreateAssessmentPage() {
                     tabDetection,
                     audioMonitoring,
                     aiProctoring,
+                    
+                    questions: selectedQuestions.map(q => ({
+                        questionId: q.id,
+                        marks: q.marks,
+                        order: q.order
+                    })),
                 }),
             });
 
@@ -516,37 +579,7 @@ export default function CreateAssessmentPage() {
                                 title="Question Configuration"
                             />
 
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <Field label="MCQ Questions">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={mcqCount}
-                                        onChange={(e) => setMcqCount(Number(e.target.value))}
-                                        className="input"
-                                    />
-                                </Field>
-
-                                <Field label="Coding Problems">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={codingCount}
-                                        onChange={(e) => setCodingCount(Number(e.target.value))}
-                                        className="input"
-                                    />
-                                </Field>
-
-                                <Field label="Total Marks">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={totalMarks}
-                                        onChange={(e) => setTotalMarks(Number(e.target.value))}
-                                        className="input"
-                                    />
-                                </Field>
-
+                            <div className="grid gap-5 md:grid-cols-2 mb-6">
                                 <Field label="Passing Score">
                                     <input
                                         type="number"
@@ -571,6 +604,63 @@ export default function CreateAssessmentPage() {
                                         <option>Mixed</option>
                                     </select>
                                 </Field>
+                            </div>
+
+                            <div className="border-t border-black/10 pt-6">
+                                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-wider text-black/45">Select Questions from Bank</h3>
+                                
+                                <div className="mb-4 flex items-center gap-4">
+                                    <div className="relative flex-1">
+                                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
+                                        <input
+                                            className="input pl-9"
+                                            placeholder="Search questions by title or topic..."
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="max-h-[400px] overflow-y-auto rounded-xl border border-black/10 bg-white">
+                                    {isLoadingQuestions ? (
+                                        <div className="p-8 text-center text-sm text-black/50">Loading questions...</div>
+                                    ) : questionsBank.filter(q => q.title.toLowerCase().includes(searchQuery.toLowerCase()) || (q.topic && q.topic.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 ? (
+                                        <div className="p-8 text-center text-sm text-black/50">No questions found matching your search.</div>
+                                    ) : (
+                                        <div className="divide-y divide-black/5">
+                                            {questionsBank
+                                                .filter(q => q.title.toLowerCase().includes(searchQuery.toLowerCase()) || (q.topic && q.topic.toLowerCase().includes(searchQuery.toLowerCase())))
+                                                .map(q => {
+                                                const isSelected = selectedQuestions.some(sq => sq.id === q.id);
+                                                return (
+                                                    <label key={q.id} className={`flex cursor-pointer items-center justify-between p-4 transition hover:bg-black/[0.02] ${isSelected ? 'bg-[#fff7f1]' : ''}`}>
+                                                        <div className="flex items-center gap-4">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                className="h-4 w-4 accent-[#f15b1f]"
+                                                                checked={isSelected}
+                                                                onChange={() => handleToggleQuestion(q)}
+                                                            />
+                                                            <div>
+                                                                <div className="text-sm font-semibold">{q.title}</div>
+                                                                <div className="mt-1 flex items-center gap-2 text-[11px] text-black/50 font-medium">
+                                                                    <span className={q.type === 'MCQ' ? 'text-blue-600' : 'text-purple-600'}>{q.type}</span>
+                                                                    <span>•</span>
+                                                                    <span>{q.difficulty}</span>
+                                                                    <span>•</span>
+                                                                    <span>{q.defaultMarks} Marks</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="mt-3 text-xs text-black/50">
+                                    {selectedQuestions.length} questions selected ({totalMarks} total marks)
+                                </div>
                             </div>
                         </section>
 
@@ -1010,6 +1100,37 @@ export default function CreateAssessmentPage() {
                             </div>
                         </section>
 
+                        {/* Selected Questions Preview */}
+                        <section className="rounded-xl border border-black/10 bg-[#faf8f3] p-6">
+                            <SectionHeader
+                                icon={<FileText size={17} />}
+                                title={`Selected Questions (${selectedQuestions.length})`}
+                            />
+
+                            <div className="rounded-xl border border-black/10 bg-white overflow-hidden">
+                                {selectedQuestions.length === 0 ? (
+                                    <div className="p-6 text-center text-sm text-black/50">No questions selected</div>
+                                ) : (
+                                    <div className="divide-y divide-black/5">
+                                        {selectedQuestions.map((sq, idx) => (
+                                            <div key={sq.id} className="flex items-center justify-between p-4">
+                                                <div className="flex items-center gap-4">
+                                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/5 text-[10px] font-bold">
+                                                        {idx + 1}
+                                                    </span>
+                                                    <div>
+                                                        <div className="text-sm font-semibold">{sq.title}</div>
+                                                        <div className="mt-1 text-[10px] uppercase tracking-wider text-black/50">{sq.type} • {sq.difficulty}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm font-bold">{sq.marks} Marks</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
                         {/* Security Preview */}
                         <section className="rounded-xl bg-[#111616] p-6 text-white">
                             <div className="flex items-center justify-between">
@@ -1155,7 +1276,7 @@ export default function CreateAssessmentPage() {
                         <div className="mx-auto mt-8 grid max-w-2xl gap-3 md:grid-cols-3">
                             <PreviewItem
                                 label="Assessment"
-                                value="Data Structures"
+                                value={title}
                             />
 
                             <PreviewItem
