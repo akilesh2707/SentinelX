@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../src/lib/prisma";
+import { auth } from "../../../auth";
 
 type AssessmentQuestionInput = {
     questionId: string;
@@ -23,6 +24,12 @@ function generateAccessCode(length = 6) {
 
 export async function POST(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const body = await request.json();
 
         // Validate questions payload
@@ -128,6 +135,7 @@ export async function POST(request: Request) {
                     accessCode,
                     joinLink: `/join/${accessCode}`,
                     status: "PUBLISHED",
+                    organizerId,
                 },
             });
 
@@ -166,7 +174,13 @@ export async function POST(request: Request) {
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const assessments = await prisma.assessment.findMany({
+            where: { organizerId: session.user.id },
             orderBy: {
                 createdAt: "desc",
             },

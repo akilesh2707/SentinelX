@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../src/lib/prisma";
+import { auth } from "../../../auth";
 
 export async function GET(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const { searchParams } = new URL(req.url);
         const assessmentId = searchParams.get("assessmentId");
         const search = searchParams.get("search");
         const status = searchParams.get("status");
 
-        const where: any = {};
+        const where: any = {
+            assessment: { organizerId }
+        };
 
         if (assessmentId) {
             where.assessmentId = assessmentId;

@@ -1,20 +1,28 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../src/lib/prisma";
+import { auth } from "../../../auth";
 
 export async function GET() {
     try {
-        // 1. Core Metrics
-        const totalAssessments = await prisma.assessment.count();
-        const publishedAssessments = await prisma.assessment.count({ where: { status: "PUBLISHED" } });
-        const totalCandidates = await prisma.candidate.count();
-        const totalAttempts = await prisma.assessmentAttempt.count();
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
 
-        const submittedAttempts = await prisma.assessmentAttempt.count({ where: { status: "SUBMITTED" } });
-        const inProgressAttempts = await prisma.assessmentAttempt.count({ where: { status: "IN_PROGRESS" } });
+        // 1. Core Metrics
+        const totalAssessments = await prisma.assessment.count({ where: { organizerId } });
+        const publishedAssessments = await prisma.assessment.count({ where: { organizerId, status: "PUBLISHED" } });
+        const totalCandidates = await prisma.candidate.count({ where: { attempts: { some: { assessment: { organizerId } } } } });
+        const totalAttempts = await prisma.assessmentAttempt.count({ where: { assessment: { organizerId } } });
+
+        const submittedAttempts = await prisma.assessmentAttempt.count({ where: { assessment: { organizerId }, status: "SUBMITTED" } });
+        const inProgressAttempts = await prisma.assessmentAttempt.count({ where: { assessment: { organizerId }, status: "IN_PROGRESS" } });
 
         // 2. Average Score Percentage
         const evaluatedAttempts = await prisma.assessmentAttempt.findMany({
             where: {
+                assessment: { organizerId },
                 status: "SUBMITTED",
                 score: { not: null },
                 maxScore: { gt: 0 }
@@ -36,6 +44,7 @@ export async function GET() {
 
         // 3. Recent Assessments
         const recentAssessmentsRaw = await prisma.assessment.findMany({
+            where: { organizerId },
             orderBy: { createdAt: "desc" },
             take: 5,
             select: {
@@ -65,6 +74,7 @@ export async function GET() {
 
         // 4. Recent Activity (Recent Results/Attempts)
         const recentActivity = await prisma.assessmentAttempt.findMany({
+            where: { assessment: { organizerId } },
             orderBy: { updatedAt: "desc" },
             take: 5,
             select: {

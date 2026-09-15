@@ -44,8 +44,13 @@ model Assessment {
   attempts         AssessmentAttempt[]
   eventAssessments EventAssessment[]
 
+  organizerId String
+  organizer   Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
 }
 
 enum QuestionType {
@@ -163,7 +168,7 @@ model AssessmentAttempt {
   candidate  Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
-  questions AttemptQuestion[]
+  questions        AttemptQuestion[]
   proctoringEvents ProctoringEvent[]
 
   createdAt DateTime @default(now())
@@ -245,13 +250,15 @@ model EventAssessment {
 }
 
 model Organizer {
-  id           String   @id @default(cuid())
+  id           String @id @default(cuid())
   name         String
-  email        String   @unique
+  email        String @unique
   passwordHash String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  assessments Assessment[]
 }
 
 enum ProctoringEventType {

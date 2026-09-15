@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../src/lib/prisma";
+import { auth } from "../../../../auth";
 
 export async function GET(
     request: Request,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const { id } = await context.params;
 
-        const assessment = await prisma.assessment.findUnique({
-            where: { id },
+        const assessment = await prisma.assessment.findFirst({
+            where: { id, organizerId },
         });
 
         if (!assessment) {
@@ -44,8 +51,23 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const { id } = await context.params;
         const body = await request.json();
+
+        // Enforce ownership by finding it first
+        const existing = await prisma.assessment.findFirst({
+            where: { id, organizerId }
+        });
+
+        if (!existing) {
+            return NextResponse.json({ success: false, error: "Assessment not found" }, { status: 404 });
+        }
 
         const assessment = await prisma.assessment.update({
             where: { id },
@@ -100,13 +122,19 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const { id } = await context.params;
 
-        const existingAssessment = await prisma.assessment.findUnique({
-            where: { id },
+        const { count } = await prisma.assessment.deleteMany({
+            where: { id, organizerId },
         });
 
-        if (!existingAssessment) {
+        if (count === 0) {
             return NextResponse.json(
                 {
                     success: false,
@@ -115,10 +143,6 @@ export async function DELETE(
                 { status: 404 }
             );
         }
-
-        await prisma.assessment.delete({
-            where: { id },
-        });
 
         return NextResponse.json({
             success: true,

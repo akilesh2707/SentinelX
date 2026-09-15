@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../src/lib/prisma";
+import { auth } from "../../../../auth";
 
 export async function GET(
     req: NextRequest,
     props: { params: Promise<{ attemptId: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const params = await props.params;
         const attemptId = params.attemptId;
 
-        const attempt = await prisma.assessmentAttempt.findUnique({
-            where: { id: attemptId },
+        const attempt = await prisma.assessmentAttempt.findFirst({
+            where: { id: attemptId, assessment: { organizerId } },
             select: {
                 id: true,
                 status: true,

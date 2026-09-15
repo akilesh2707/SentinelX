@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../src/lib/prisma";
+import { auth } from "../../../auth";
 
 export async function GET(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const { searchParams } = new URL(req.url);
         const assessmentId = searchParams.get("assessmentId");
 
-        const whereCondition = assessmentId ? { assessmentId } : {};
+        const whereCondition: any = {
+            assessment: { organizerId }
+        };
+        if (assessmentId) {
+            whereCondition.assessmentId = assessmentId;
+        }
 
         // Fetch all attempts for the scope (to avoid multiple count queries where we'd need them anyway for distribution)
         const attempts = await prisma.assessmentAttempt.findMany({
