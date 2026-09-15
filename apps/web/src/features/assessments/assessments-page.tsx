@@ -49,20 +49,18 @@ type Assessment = {
     updatedAt: string;
 };
 
-type Status = "Live" | "Scheduled" | "Completed" | "Draft";
+type Status = "Published" | "Closed" | "Draft";
 
 const filters: Array<"All" | Status> = [
     "All",
-    "Live",
-    "Scheduled",
-    "Completed",
+    "Published",
+    "Closed",
     "Draft",
 ];
 
 const statusStyles: Record<Status, string> = {
-    Live: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Scheduled: "bg-orange-50 text-orange-700 border-orange-200",
-    Completed: "bg-slate-100 text-slate-600 border-slate-200",
+    Published: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Closed: "bg-slate-100 text-slate-600 border-slate-200",
     Draft: "bg-[#f1eee7] text-[#777870] border-[#ddd9cf]",
 };
 
@@ -70,14 +68,11 @@ const statusStyles: Record<Status, string> = {
 
 function getDisplayStatus(assessment: Assessment): Status {
     switch (assessment.status) {
-        case "LIVE":
-            return "Live";
-
         case "PUBLISHED":
-            return "Scheduled";
+            return "Published";
 
-        case "COMPLETED":
-            return "Completed";
+        case "CLOSED":
+            return "Closed";
 
         case "DRAFT":
             return "Draft";
@@ -227,19 +222,19 @@ export function AssessmentsPage() {
                 {[
                     ["Total Assessments", String(assessments.length), FileText],
                     [
-                        "Live Now",
+                        "Published",
                         String(
                             assessments.filter(
-                                (assessment) => getDisplayStatus(assessment) === "Live"
+                                (assessment) => getDisplayStatus(assessment) === "Published"
                             ).length
                         ),
                         Zap,
                     ],
                     [
-                        "Scheduled",
+                        "Closed",
                         String(
                             assessments.filter(
-                                (assessment) => getDisplayStatus(assessment) === "Scheduled"
+                                (assessment) => getDisplayStatus(assessment) === "Closed"
                             ).length
                         ),
                         CalendarDays,
@@ -460,7 +455,7 @@ export function AssessmentsPage() {
                                                 <ChevronRight size={13} />
                                             </button>
 
-                                            {displayStatus === "Live" && (
+                                            {displayStatus === "Published" && (
                                                 <button className="rounded-lg bg-[#202424] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-orange-600">
                                                     Monitor
                                                 </button>

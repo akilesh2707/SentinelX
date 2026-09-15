@@ -57,6 +57,7 @@ export default function AssessmentDetailsPage() {
     const [error, setError] = useState("");
     const [deleting, setDeleting] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [transitioning, setTransitioning] = useState(false);
 
     useEffect(() => {
         async function loadAssessment() {
@@ -110,6 +111,35 @@ export default function AssessmentDetailsPage() {
             setError("Unable to delete assessment.");
             setDeleting(false);
             setShowDeleteModal(false);
+        }
+    }
+
+    async function publishAssessment() {
+        try {
+            setTransitioning(true);
+            const res = await fetch(`/api/assessments/${id}/publish`, { method: "POST" });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || "Failed to publish");
+            setAssessment(data.assessment);
+        } catch (error: any) {
+            alert(error.message);
+        } finally {
+            setTransitioning(false);
+        }
+    }
+
+    async function closeAssessment() {
+        if (!confirm("Are you sure you want to close this assessment?")) return;
+        try {
+            setTransitioning(true);
+            const res = await fetch(`/api/assessments/${id}/close`, { method: "POST" });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || "Failed to close");
+            setAssessment(data.assessment);
+        } catch (error: any) {
+            alert(error.message);
+        } finally {
+            setTransitioning(false);
         }
     }
 
@@ -172,18 +202,42 @@ export default function AssessmentDetailsPage() {
                             {assessment.status}
                         </span>
 
-                        <button
-                            onClick={() => router.push(`/assessments/${assessment.id}/edit`)}
-                            className="rounded-lg bg-[#f15b1f] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d94f18]"
-                        >
-                            Edit Assessment
-                        </button>
-                        <button
-                            onClick={() => setShowDeleteModal(true)}
-                            className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                        >
-                            Delete
-                        </button>
+                        {assessment.status === "DRAFT" && (
+                            <button
+                                onClick={publishAssessment}
+                                disabled={transitioning}
+                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                                {transitioning ? "Publishing..." : "Publish"}
+                            </button>
+                        )}
+                        
+                        {assessment.status === "PUBLISHED" && (
+                            <button
+                                onClick={closeAssessment}
+                                disabled={transitioning}
+                                className="rounded-lg bg-gray-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-50"
+                            >
+                                {transitioning ? "Closing..." : "Close Assessment"}
+                            </button>
+                        )}
+
+                        {assessment.status !== "CLOSED" && (
+                            <button
+                                onClick={() => router.push(`/assessments/${assessment.id}/edit`)}
+                                className="rounded-lg bg-[#f15b1f] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d94f18]"
+                            >
+                                Edit Assessment
+                            </button>
+                        )}
+                        {assessment.status === "DRAFT" && (
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                            >
+                                Delete
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

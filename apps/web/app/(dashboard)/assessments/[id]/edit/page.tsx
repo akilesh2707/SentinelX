@@ -36,6 +36,7 @@ type Assessment = {
     tabDetection: boolean;
     audioMonitoring: boolean;
     aiProctoring: boolean;
+    status: string;
 };
 
 export default function EditAssessmentPage() {
@@ -46,6 +47,7 @@ export default function EditAssessmentPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+    const [status, setStatus] = useState("DRAFT");
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -85,7 +87,8 @@ export default function EditAssessmentPage() {
                 }
 
                 const assessment: Assessment = data.assessment;
-
+                
+                setStatus(assessment.status);
                 setTitle(assessment.title);
                 setDescription(assessment.description || "");
                 setType(assessment.type);
@@ -238,11 +241,12 @@ export default function EditAssessmentPage() {
                             <div className="space-y-5">
                                 <Field label="Title">
                                     <input
+                                        disabled={status === "PUBLISHED"}
                                         value={title}
                                         onChange={(e) =>
                                             setTitle(e.target.value)
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     />
                                 </Field>
 
@@ -259,11 +263,12 @@ export default function EditAssessmentPage() {
 
                                 <Field label="Assessment Type">
                                     <select
+                                        disabled={status === "PUBLISHED"}
                                         value={type}
                                         onChange={(e) =>
                                             setType(e.target.value)
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     >
                                         <option value="mcq">MCQ</option>
                                         <option value="coding">
@@ -284,18 +289,20 @@ export default function EditAssessmentPage() {
                             <div className="grid gap-5 md:grid-cols-2">
                                 <Field label="MCQ Questions">
                                     <input
+                                        disabled={status === "PUBLISHED"}
                                         type="number"
                                         min="0"
                                         value={mcqCount}
                                         onChange={(e) =>
                                             setMcqCount(Number(e.target.value))
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     />
                                 </Field>
 
                                 <Field label="Coding Problems">
                                     <input
+                                        disabled={status === "PUBLISHED"}
                                         type="number"
                                         min="0"
                                         value={codingCount}
@@ -304,12 +311,13 @@ export default function EditAssessmentPage() {
                                                 Number(e.target.value)
                                             )
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     />
                                 </Field>
 
                                 <Field label="Total Marks">
                                     <input
+                                        disabled={status === "PUBLISHED"}
                                         type="number"
                                         min="1"
                                         value={totalMarks}
@@ -318,12 +326,13 @@ export default function EditAssessmentPage() {
                                                 Number(e.target.value)
                                             )
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     />
                                 </Field>
 
                                 <Field label="Passing Score">
                                     <input
+                                        disabled={status === "PUBLISHED"}
                                         type="number"
                                         min="0"
                                         value={passingScore}
@@ -332,17 +341,18 @@ export default function EditAssessmentPage() {
                                                 Number(e.target.value)
                                             )
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     />
                                 </Field>
 
                                 <Field label="Difficulty">
                                     <select
+                                        disabled={status === "PUBLISHED"}
                                         value={difficulty}
                                         onChange={(e) =>
                                             setDifficulty(e.target.value)
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     >
                                         <option>Easy</option>
                                         <option>Medium</option>
@@ -353,6 +363,7 @@ export default function EditAssessmentPage() {
 
                                 <Field label="Duration">
                                     <input
+                                        disabled={status === "PUBLISHED"}
                                         type="number"
                                         min="1"
                                         value={duration}
@@ -361,17 +372,18 @@ export default function EditAssessmentPage() {
                                                 Number(e.target.value)
                                             )
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     />
                                 </Field>
 
                                 <Field label="Max Attempts">
                                     <select
+                                        disabled={status === "PUBLISHED"}
                                         value={maxAttempts}
                                         onChange={(e) =>
                                             setMaxAttempts(e.target.value)
                                         }
-                                        className="input"
+                                        className="input disabled:opacity-50"
                                     >
                                         <option>1</option>
                                         <option>2</option>
@@ -398,6 +410,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Auto Submit"
                                     enabled={autoSubmit}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setAutoSubmit(!autoSubmit)
                                     }
@@ -406,6 +419,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Randomize Questions"
                                     enabled={randomizeQuestions}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setRandomizeQuestions(
                                             !randomizeQuestions
@@ -416,6 +430,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Negative Marking"
                                     enabled={negativeMarking}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setNegativeMarking(
                                             !negativeMarking
@@ -435,11 +450,12 @@ export default function EditAssessmentPage() {
 
                             <Field label="Security Level">
                                 <select
+                                    disabled={status === "PUBLISHED"}
                                     value={securityLevel}
                                     onChange={(e) =>
                                         setSecurityLevel(e.target.value)
                                     }
-                                    className="input"
+                                    className="input disabled:opacity-50"
                                 >
                                     <option value="standard">
                                         Standard
@@ -457,6 +473,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Identity Verification"
                                     enabled={identityVerification}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setIdentityVerification(
                                             !identityVerification
@@ -467,6 +484,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Primary Camera"
                                     enabled={primaryCamera}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setPrimaryCamera(!primaryCamera)
                                     }
@@ -475,6 +493,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Secondary Camera"
                                     enabled={secondaryCamera}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setSecondaryCamera(
                                             !secondaryCamera
@@ -485,6 +504,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Browser Lock"
                                     enabled={browserLock}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setBrowserLock(!browserLock)
                                     }
@@ -493,6 +513,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Tab Detection"
                                     enabled={tabDetection}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setTabDetection(!tabDetection)
                                     }
@@ -501,6 +522,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="Audio Monitoring"
                                     enabled={audioMonitoring}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setAudioMonitoring(
                                             !audioMonitoring
@@ -511,6 +533,7 @@ export default function EditAssessmentPage() {
                                 <Toggle
                                     title="AI Proctoring"
                                     enabled={aiProctoring}
+                                    disabled={status === "PUBLISHED"}
                                     onClick={() =>
                                         setAiProctoring(!aiProctoring)
                                     }
@@ -631,17 +654,20 @@ function Field({
 function Toggle({
     title,
     enabled,
+    disabled,
     onClick,
 }: {
     title: string;
     enabled: boolean;
+    disabled?: boolean;
     onClick: () => void;
 }) {
     return (
         <button
             type="button"
+            disabled={disabled}
             onClick={onClick}
-            className="flex w-full items-center justify-between rounded-lg border border-black/10 bg-white p-4 text-left"
+            className={`flex w-full items-center justify-between rounded-lg border border-black/10 bg-white p-4 text-left ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
             <span className="text-sm font-medium">{title}</span>
 

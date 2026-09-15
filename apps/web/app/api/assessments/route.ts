@@ -134,7 +134,7 @@ export async function POST(request: Request) {
 
                     accessCode,
                     joinLink: `/join/${accessCode}`,
-                    status: "PUBLISHED",
+                    status: "DRAFT",
                     organizerId,
                 },
             });
