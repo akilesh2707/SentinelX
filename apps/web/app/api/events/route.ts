@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../src/lib/prisma";
+import { auth } from "../../../auth";
 
 export async function GET(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const { searchParams } = new URL(req.url);
         const search = searchParams.get("search");
         const status = searchParams.get("status");
 
-        const where: any = {};
+        const where: any = { organizerId };
         if (search) {
             where.title = { contains: search, mode: "insensitive" };
         }
@@ -67,6 +74,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const body = await req.json();
         const { title, description, startDate, endDate, status } = body;
 
@@ -95,7 +108,8 @@ export async function POST(req: NextRequest) {
                 description: description || null,
                 startDate: startDate ? new Date(startDate) : null,
                 endDate: endDate ? new Date(endDate) : null,
-                status: status || "DRAFT"
+                status: status || "DRAFT",
+                organizerId
             }
         });
 

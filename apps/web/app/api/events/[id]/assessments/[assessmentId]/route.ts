@@ -16,12 +16,20 @@ export async function DELETE(
         const params = await props.params;
         const { id: eventId, assessmentId } = params;
 
-        // Verify ownership
+        // Verify Assessment ownership
         const assessment = await prisma.assessment.findFirst({
             where: { id: assessmentId, organizerId }
         });
         if (!assessment) {
             return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
+        }
+
+        // Verify Event ownership
+        const event = await prisma.event.findFirst({
+            where: { id: eventId, organizerId }
+        });
+        if (!event) {
+            return NextResponse.json({ error: "Event not found" }, { status: 404 });
         }
 
         const existingLink = await prisma.eventAssessment.findUnique({

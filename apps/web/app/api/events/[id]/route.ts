@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../src/lib/prisma";
+import { auth } from "../../../../auth";
 
 export async function GET(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const params = await props.params;
         const eventId = params.id;
 
-        const event = await prisma.event.findUnique({
-            where: { id: eventId },
+        const event = await prisma.event.findFirst({
+            where: { id: eventId, organizerId },
             select: {
                 id: true,
                 title: true,
@@ -80,13 +87,19 @@ export async function PATCH(
     props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const params = await props.params;
         const eventId = params.id;
         const body = await req.json();
 
         const { title, description, startDate, endDate, status } = body;
 
-        const existingEvent = await prisma.event.findUnique({ where: { id: eventId } });
+        const existingEvent = await prisma.event.findFirst({ where: { id: eventId, organizerId } });
         if (!existingEvent) {
             return NextResponse.json({ error: "Event not found" }, { status: 404 });
         }
@@ -143,10 +156,16 @@ export async function DELETE(
     props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const params = await props.params;
         const eventId = params.id;
 
-        const existingEvent = await prisma.event.findUnique({ where: { id: eventId } });
+        const existingEvent = await prisma.event.findFirst({ where: { id: eventId, organizerId } });
         if (!existingEvent) {
             return NextResponse.json({ error: "Event not found" }, { status: 404 });
         }

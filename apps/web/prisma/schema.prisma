@@ -230,8 +230,13 @@ model Event {
 
   assessments EventAssessment[]
 
+  organizerId String
+  organizer   Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
 }
 
 model EventAssessment {
@@ -259,6 +264,7 @@ model Organizer {
   updatedAt DateTime @updatedAt
 
   assessments Assessment[]
+  events      Event[]
 }
 
 enum ProctoringEventType {

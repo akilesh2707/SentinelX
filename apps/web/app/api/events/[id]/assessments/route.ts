@@ -23,7 +23,7 @@ export async function POST(
             return NextResponse.json({ error: "assessmentId is required" }, { status: 400 });
         }
 
-        const event = await prisma.event.findUnique({ where: { id: eventId } });
+        const event = await prisma.event.findFirst({ where: { id: eventId, organizerId } });
         if (!event) {
             return NextResponse.json({ error: "Event not found" }, { status: 404 });
         }
