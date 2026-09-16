@@ -58,33 +58,39 @@ export default function AssessmentDetailsPage() {
     const [deleting, setDeleting] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [transitioning, setTransitioning] = useState(false);
+    const [incidents, setIncidents] = useState<any[]>([]);
 
     useEffect(() => {
-        async function loadAssessment() {
+        async function loadData() {
             try {
                 setLoading(true);
+                const [assessmentRes, incidentsRes] = await Promise.all([
+                    fetch(`/api/assessments/${id}`),
+                    fetch(`/api/assessments/${id}/incidents`)
+                ]);
 
-                const response = await fetch(`/api/assessments/${id}`);
-
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    throw new Error(
-                        data.error || "Failed to load assessment"
-                    );
+                const assessmentData = await assessmentRes.json();
+                if (!assessmentRes.ok || !assessmentData.success) {
+                    throw new Error(assessmentData.error || "Failed to load assessment");
                 }
+                setAssessment(assessmentData.assessment);
 
-                setAssessment(data.assessment);
+                if (incidentsRes.ok) {
+                    const incidentsData = await incidentsRes.json();
+                    if (incidentsData.success) {
+                        setIncidents(incidentsData.incidents || []);
+                    }
+                }
             } catch (error) {
-                console.error("Failed to load assessment:", error);
-                setError("Unable to load assessment.");
+                console.error("Failed to load data:", error);
+                setError("Unable to load assessment data.");
             } finally {
                 setLoading(false);
             }
         }
 
         if (id) {
-            loadAssessment();
+            loadData();
         }
     }, [id]);
 
@@ -426,6 +432,35 @@ export default function AssessmentDetailsPage() {
                                 />
                             </div>
                         </section>
+
+                        {/* Incidents Section */}
+                        {incidents.length > 0 && (
+                            <section className="rounded-xl border border-red-200 bg-[#fff5f5] p-6">
+                                <SectionHeader
+                                    icon={<ShieldCheck size={17} />}
+                                    title="Active Security Incidents"
+                                />
+                                <div className="space-y-3">
+                                    {incidents.slice(0, 5).map((incident) => (
+                                        <div key={incident.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100">
+                                            <div>
+                                                <div className="font-semibold text-sm">{incident.attempt.candidate.name}</div>
+                                                <div className="text-xs text-red-600 font-medium">{incident.type.replace(/_/g, " ")} ({incident.severity})</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xs text-gray-500">{incident.eventCount} events</div>
+                                                <div className="text-[10px] text-gray-400">{new Date(incident.lastSeen).toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {incidents.length > 5 && (
+                                        <button onClick={() => router.push("/incidents")} className="w-full text-center text-xs text-red-600 font-bold hover:underline">
+                                            View all {incidents.length} incidents
+                                        </button>
+                                    )}
+                                </div>
+                            </section>
+                        )}
                     </div>
 
                     {/* Sidebar */}
