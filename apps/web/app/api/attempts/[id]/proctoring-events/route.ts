@@ -105,6 +105,7 @@ export async function POST(
         validEvents.sort((a, b) => a.clientTimestamp.getTime() - b.clientTimestamp.getTime());
 
         let newRiskPoints = 0;
+        const eventIncidents: Record<string, string> = {};
 
         await prisma.$transaction(async (tx) => {
             for (const ev of validEvents) {
@@ -162,6 +163,10 @@ export async function POST(
                             proctoringEventId: createdEvent.id
                         }
                     });
+
+                    if (ev.clientEventId) {
+                        eventIncidents[ev.clientEventId] = existingIncident.id;
+                    }
                 } else {
                     // Start new episode
                     const points = INCIDENT_POINTS[ev.eventType] || 0;
@@ -185,6 +190,10 @@ export async function POST(
                         }
                     });
 
+                    if (ev.clientEventId) {
+                        eventIncidents[ev.clientEventId] = newIncident.id;
+                    }
+
                     newRiskPoints += points;
                 }
             }
@@ -201,7 +210,7 @@ export async function POST(
             }
         });
 
-        return NextResponse.json({ success: true, count: validEvents.length });
+        return NextResponse.json({ success: true, count: validEvents.length, incidents: eventIncidents });
 
     } catch (error: any) {
         if (error.message === "UNAUTHORIZED") {

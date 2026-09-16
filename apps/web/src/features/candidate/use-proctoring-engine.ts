@@ -22,9 +22,11 @@ interface ProctoringEventPayload {
 interface UseProctoringEngineProps {
     attemptId: string | null;
     status: string; // Attempt status (IN_PROGRESS, etc)
+    onSecurityEvent?: (type: ProctoringEventType, clientEventId: string) => void;
+    onIncidentsCreated?: (mapping: Record<string, string>) => void;
 }
 
-export function useProctoringEngine({ attemptId, status }: UseProctoringEngineProps) {
+export function useProctoringEngine({ attemptId, status, onSecurityEvent, onIncidentsCreated }: UseProctoringEngineProps) {
     const queueRef = useRef<ProctoringEventPayload[]>([]);
     const isActive = attemptId !== null && status === "IN_PROGRESS";
     const startedRef = useRef(false);
@@ -49,6 +51,11 @@ export function useProctoringEngine({ attemptId, status }: UseProctoringEnginePr
                 if (response.status >= 500) {
                     queueRef.current = [...eventsToFlush, ...queueRef.current];
                 }
+            } else {
+                const data = await response.json();
+                if (data.incidents && onIncidentsCreated) {
+                    onIncidentsCreated(data.incidents);
+                }
             }
         } catch (err) {
             // Network error, restore queue
@@ -59,8 +66,16 @@ export function useProctoringEngine({ attemptId, status }: UseProctoringEnginePr
     const recordEvent = useCallback((type: ProctoringEventType, metadata?: Record<string, any>) => {
         if (!isActive) return;
 
+        const clientEventId = crypto.randomUUID();
+
+        if (type === "TAB_SWITCH" || type === "WINDOW_BLUR" || type === "FULLSCREEN_EXIT") {
+            if (onSecurityEvent) {
+                onSecurityEvent(type, clientEventId);
+            }
+        }
+
         queueRef.current.push({
-            clientEventId: crypto.randomUUID(),
+            clientEventId,
             type,
             clientTimestamp: new Date().toISOString(),
             metadata
@@ -70,7 +85,7 @@ export function useProctoringEngine({ attemptId, status }: UseProctoringEnginePr
         if (type === "EXAM_STARTED" || type === "EXAM_SUBMITTED") {
             flushQueue();
         }
-    }, [isActive, flushQueue]);
+    }, [isActive, flushQueue, onSecurityEvent]);
 
     // Setup periodic flush
     useEffect(() => {

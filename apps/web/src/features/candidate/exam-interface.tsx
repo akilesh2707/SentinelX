@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Clock, ChevronLeft, ChevronRight, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProctoringEngine } from "./use-proctoring-engine";
@@ -64,9 +64,65 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-    const { recordEvent } = useProctoringEngine({ attemptId: attempt.id, status: attempt.status });
+    const activeStreamRef = useRef<MediaStream | null>(null);
+    const pendingSnapshotsRef = useRef<Record<string, { blob: Blob, capturedAt: string }>>({});
+    const pendingIncidentsRef = useRef<Record<string, string>>({});
+    const processedAutomaticEvidenceRef = useRef<Set<string>>(new Set());
 
+    const handleUploadEvidence = (clientEventId: string, incidentId: string, blob: Blob, capturedAt: string) => {
+        if (processedAutomaticEvidenceRef.current.has(clientEventId)) return;
+        processedAutomaticEvidenceRef.current.add(clientEventId);
 
+        try {
+            const clientEvidenceId = crypto.randomUUID();
+            const fd = new FormData();
+            fd.append("incidentId", incidentId);
+            fd.append("clientEvidenceId", clientEvidenceId);
+            fd.append("type", "CAMERA_SNAPSHOT");
+            fd.append("capturedAt", capturedAt);
+            fd.append("file", blob, "snapshot.webp");
+
+            fetch(`/api/attempts/${attempt.id}/evidence`, {
+                method: "POST",
+                body: fd
+            }).catch(e => console.error("Automatic snapshot upload failed:", e));
+        } catch (e) {
+            console.error("Automatic snapshot prep failed:", e);
+        }
+    };
+
+    const { recordEvent } = useProctoringEngine({ 
+        attemptId: attempt.id, 
+        status: attempt.status,
+        onSecurityEvent: (type, clientEventId) => {
+            if (activeStreamRef.current) {
+                captureSnapshot(activeStreamRef.current)
+                    .then(blob => {
+                        const capturedAt = new Date().toISOString();
+                        const incidentId = pendingIncidentsRef.current[clientEventId];
+                        
+                        if (incidentId) {
+                            handleUploadEvidence(clientEventId, incidentId, blob, capturedAt);
+                            delete pendingIncidentsRef.current[clientEventId];
+                        } else {
+                            pendingSnapshotsRef.current[clientEventId] = { blob, capturedAt };
+                        }
+                    })
+                    .catch(e => console.error("Failed to automatically capture snapshot:", e));
+            }
+        },
+        onIncidentsCreated: (mapping) => {
+            Object.entries(mapping).forEach(([clientEventId, incidentId]) => {
+                const pendingSnapshot = pendingSnapshotsRef.current[clientEventId];
+                if (pendingSnapshot) {
+                    handleUploadEvidence(clientEventId, incidentId, pendingSnapshot.blob, pendingSnapshot.capturedAt);
+                    delete pendingSnapshotsRef.current[clientEventId];
+                } else {
+                    pendingIncidentsRef.current[clientEventId] = incidentId;
+                }
+            });
+        }
+    });
 
     // Maps attemptQuestionId to answer value (optionId or code string)
     const [localAnswers, setLocalAnswers] = useState<Record<string, string>>({});
@@ -92,6 +148,10 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
         isActive: isExamActive,
         recordEvent
     });
+
+    useEffect(() => {
+        activeStreamRef.current = stream;
+    }, [stream]);
 
     useEffect(() => {
         let isMounted = true;
