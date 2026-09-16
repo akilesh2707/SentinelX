@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../src/lib/prisma";
 import { requireCandidateAttempt } from "../../../../../src/lib/auth/candidate-session";
 
+const INCIDENT_POINTS: Record<string, number> = {
+    WINDOW_BLUR: 2,
+    TAB_SWITCH: 5,
+    FULLSCREEN_EXIT: 5,
+    PAGE_RELOAD: 2,
+    CAMERA_UNAVAILABLE: 10,
+    MICROPHONE_UNAVAILABLE: 5,
+    NETWORK_DISCONNECT: 0
+};
+
+const IGNORED_EVENTS = ["EXAM_STARTED", "EXAM_SUBMITTED", "NETWORK_RECONNECT"];
+
 const ALLOWED_EVENT_TYPES = [
     "TAB_SWITCH",
     "WINDOW_BLUR",
@@ -53,12 +65,12 @@ export async function POST(
 
         // 4. Construct Data for DB
         const serverTimestamp = new Date();
-        const eventsToCreate = [];
+        const validEvents: any[] = [];
 
         for (const event of payload.events) {
             if (!event || typeof event !== "object") continue;
 
-            const { type, clientTimestamp, metadata } = event;
+            const { clientEventId, type, clientTimestamp, metadata } = event;
 
             // Reject invalid event types
             if (!ALLOWED_EVENT_TYPES.includes(type)) {
@@ -75,23 +87,121 @@ export async function POST(
             const parsedClientTimestamp = clientTimestamp ? new Date(clientTimestamp) : serverTimestamp;
             const validClientTimestamp = isNaN(parsedClientTimestamp.getTime()) ? serverTimestamp : parsedClientTimestamp;
 
-            eventsToCreate.push({
+            validEvents.push({
                 attemptId,
                 eventType: type,
                 timestamp: serverTimestamp, // Authoritative
                 clientTimestamp: validClientTimestamp, // Untrusted
+                clientEventId: typeof clientEventId === 'string' ? clientEventId : undefined,
                 metadata: metadata ? metadata : undefined
             });
         }
 
-        // 5. Insert Batch
-        if (eventsToCreate.length > 0) {
-            await prisma.proctoringEvent.createMany({
-                data: eventsToCreate
-            });
+        if (validEvents.length === 0) {
+            return NextResponse.json({ success: true, count: 0 });
         }
 
-        return NextResponse.json({ success: true, count: eventsToCreate.length });
+        // Sort chronologically by clientTimestamp to process episodes correctly
+        validEvents.sort((a, b) => a.clientTimestamp.getTime() - b.clientTimestamp.getTime());
+
+        let newRiskPoints = 0;
+
+        await prisma.$transaction(async (tx) => {
+            for (const ev of validEvents) {
+                // Deduplicate by clientEventId
+                if (ev.clientEventId) {
+                    const existingRaw = await tx.proctoringEvent.findUnique({
+                        where: {
+                            attemptId_clientEventId: {
+                                attemptId,
+                                clientEventId: ev.clientEventId
+                            }
+                        }
+                    });
+                    if (existingRaw) {
+                        continue;
+                    }
+                }
+
+                // Insert raw event
+                const createdEvent = await tx.proctoringEvent.create({
+                    data: ev
+                });
+
+                if (IGNORED_EVENTS.includes(ev.eventType)) {
+                    continue;
+                }
+
+                const incidentType = ev.eventType as any;
+                const episodeWindowMs = 5 * 60 * 1000;
+                const windowStart = new Date(ev.clientTimestamp.getTime() - episodeWindowMs);
+
+                // Find active episode
+                const existingIncident = await tx.incident.findFirst({
+                    where: {
+                        attemptId,
+                        type: incidentType,
+                        lastSeen: { gte: windowStart }
+                    },
+                    orderBy: { lastSeen: 'desc' }
+                });
+
+                if (existingIncident) {
+                    // We found an active episode, add to it
+                    await tx.incident.update({
+                        where: { id: existingIncident.id },
+                        data: {
+                            lastSeen: ev.clientTimestamp > existingIncident.lastSeen ? ev.clientTimestamp : existingIncident.lastSeen,
+                            eventCount: { increment: 1 }
+                        }
+                    });
+
+                    await tx.incidentEvent.create({
+                        data: {
+                            incidentId: existingIncident.id,
+                            proctoringEventId: createdEvent.id
+                        }
+                    });
+                } else {
+                    // Start new episode
+                    const points = INCIDENT_POINTS[ev.eventType] || 0;
+                    const severity = points >= 10 ? "HIGH" : (points >= 5 ? "MEDIUM" : "LOW");
+                    
+                    const newIncident = await tx.incident.create({
+                        data: {
+                            attemptId,
+                            type: incidentType,
+                            severity,
+                            firstSeen: ev.clientTimestamp,
+                            lastSeen: ev.clientTimestamp,
+                            eventCount: 1,
+                        }
+                    });
+
+                    await tx.incidentEvent.create({
+                        data: {
+                            incidentId: newIncident.id,
+                            proctoringEventId: createdEvent.id
+                        }
+                    });
+
+                    newRiskPoints += points;
+                }
+            }
+
+            if (newRiskPoints > 0) {
+                const currentAttempt = await tx.assessmentAttempt.findUnique({ where: { id: attemptId } });
+                if (currentAttempt) {
+                    const updatedScore = Math.min(100, (currentAttempt.riskScore || 0) + newRiskPoints);
+                    await tx.assessmentAttempt.update({
+                        where: { id: attemptId },
+                        data: { riskScore: updatedScore }
+                    });
+                }
+            }
+        });
+
+        return NextResponse.json({ success: true, count: validEvents.length });
 
     } catch (error: any) {
         if (error.message === "UNAUTHORIZED") {

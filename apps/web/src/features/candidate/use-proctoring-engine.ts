@@ -13,6 +13,7 @@ export type ProctoringEventType =
     | "EXAM_SUBMITTED";
 
 interface ProctoringEventPayload {
+    clientEventId: string;
     type: ProctoringEventType;
     clientTimestamp: string;
     metadata?: Record<string, any>;
@@ -59,6 +60,7 @@ export function useProctoringEngine({ attemptId, status }: UseProctoringEnginePr
         if (!isActive) return;
 
         queueRef.current.push({
+            clientEventId: crypto.randomUUID(),
             type,
             clientTimestamp: new Date().toISOString(),
             metadata

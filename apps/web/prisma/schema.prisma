@@ -170,6 +170,9 @@ model AssessmentAttempt {
 
   questions        AttemptQuestion[]
   proctoringEvents ProctoringEvent[]
+  incidents        Incident[]
+
+  riskScore Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -286,11 +289,77 @@ model ProctoringEvent {
   eventType       ProctoringEventType
   timestamp       DateTime
   clientTimestamp DateTime
+  clientEventId   String?
   metadata        Json?
 
   attempt AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
+  incidentEvents IncidentEvent[]
+
+  @@unique([attemptId, clientEventId])
   @@index([attemptId, timestamp])
+}
+
+enum IncidentType {
+  TAB_SWITCH
+  WINDOW_BLUR
+  FULLSCREEN_EXIT
+  PAGE_RELOAD
+  CAMERA_UNAVAILABLE
+  MICROPHONE_UNAVAILABLE
+  NETWORK_DISCONNECT
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  UNRESOLVED
+  REVIEWED
+  DISMISSED
+}
+
+model Incident {
+  id        String @id @default(cuid())
+  attemptId String
+
+  type     IncidentType
+  severity IncidentSeverity
+  status   IncidentStatus   @default(UNRESOLVED)
+
+  firstSeen  DateTime
+  lastSeen   DateTime
+  eventCount Int      @default(1)
+
+  metadata Json?
+
+  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  events  IncidentEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([attemptId])
+  @@index([attemptId, type])
+  @@index([attemptId, status])
+}
+
+model IncidentEvent {
+  id                String @id @default(cuid())
+  incidentId        String
+  proctoringEventId String
+
+  incident        Incident        @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  proctoringEvent ProctoringEvent @relation(fields: [proctoringEventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([incidentId, proctoringEventId])
+  @@index([incidentId])
 }
