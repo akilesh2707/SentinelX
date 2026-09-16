@@ -15,6 +15,27 @@ export async function GET(req: NextRequest) {
         const search = searchParams.get("search");
         const status = searchParams.get("status");
 
+        const pageParam = searchParams.get("page");
+        const limitParam = searchParams.get("limit");
+
+        let page = 1;
+        if (pageParam) {
+            const parsedPage = parseInt(pageParam, 10);
+            if (!isNaN(parsedPage) && parsedPage >= 1) {
+                page = parsedPage;
+            }
+        }
+
+        let limit = 50;
+        if (limitParam) {
+            const parsedLimit = parseInt(limitParam, 10);
+            if (!isNaN(parsedLimit) && parsedLimit >= 1 && parsedLimit <= 100) {
+                limit = parsedLimit;
+            }
+        }
+
+        const skip = (page - 1) * limit;
+
         const where: any = {
             assessment: { organizerId }
         };
@@ -40,14 +61,18 @@ export async function GET(req: NextRequest) {
             };
         }
 
-        const attempts = await prisma.assessmentAttempt.findMany({
-            where,
-            orderBy: [
-                { submittedAt: 'desc' },
-                { startedAt: 'desc' }
-            ],
-            select: {
-                id: true,
+        const [totalRecords, attempts] = await Promise.all([
+            prisma.assessmentAttempt.count({ where }),
+            prisma.assessmentAttempt.findMany({
+                where,
+                orderBy: [
+                    { submittedAt: 'desc' },
+                    { startedAt: 'desc' }
+                ],
+                skip,
+                take: limit,
+                select: {
+                    id: true,
                 status: true,
                 score: true,
                 maxScore: true,
@@ -67,7 +92,8 @@ export async function GET(req: NextRequest) {
                     }
                 }
             }
-        });
+        })
+    ]);
 
         const safeResults = attempts.map(attempt => {
             let percentage = null;
@@ -80,8 +106,9 @@ export async function GET(req: NextRequest) {
 
             return {
                 attemptId: attempt.id,
+                assessmentId: attempt.assessment.id,
+                assessmentTitle: attempt.assessment.title,
                 candidate: attempt.candidate,
-                assessment: attempt.assessment,
                 status: attempt.status,
                 score: attempt.score,
                 maxScore: attempt.maxScore,
@@ -91,9 +118,17 @@ export async function GET(req: NextRequest) {
             };
         });
 
+        const totalPages = Math.ceil(totalRecords / limit);
+
         return NextResponse.json({
             success: true,
-            results: safeResults
+            results: safeResults,
+            pagination: {
+                totalRecords,
+                totalPages,
+                currentPage: page,
+                limit
+            }
         });
 
     } catch (error) {
