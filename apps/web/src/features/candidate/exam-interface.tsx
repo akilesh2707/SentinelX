@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, ChevronLeft, ChevronRight, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useProctoringEngine } from "./use-proctoring-engine";
 import { useMediaProctoring } from "./use-media-proctoring";
 import { Camera, Mic, MicOff, VideoOff, Camera as CameraIcon } from "lucide-react";
@@ -58,6 +59,7 @@ type AnswerState = {
 };
 
 export function ExamInterface({ attempt }: { attempt: AttemptState }) {
+    const router = useRouter();
     const [questions, setQuestions] = useState<AttemptQuestion[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -418,35 +420,10 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
     const hasCoding = questions.some(q => q.question.type === "CODING");
 
     if (submitResult) {
+        router.replace(`/exam/${attempt.id}/result`);
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto">
-                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6">
-                    <CheckCircle2 size={32} />
-                </div>
-                <h1 className="text-3xl font-bold text-[#fbfaf6] mb-4">Assessment Submitted</h1>
-                <p className="text-[#a0a19b] mb-8">
-                    Your answers have been securely recorded. You may now close this window.
-                </p>
-
-                <div className="bg-[#2d2d2d] rounded-xl p-6 w-full text-left space-y-4">
-                    <div className="flex justify-between items-center border-b border-[#303433] pb-4">
-                        <span className="text-[#a0a19b]">Submission Status</span>
-                        <span className="font-semibold text-[#fbfaf6]">{submitResult.status}</span>
-                    </div>
-                    {submitResult.score !== null && (
-                        <div className="flex justify-between items-center border-b border-[#303433] pb-4">
-                            <span className="text-[#a0a19b]">Calculated Score</span>
-                            <span className="font-semibold text-emerald-400">
-                                {submitResult.score} / {submitResult.maxScore}
-                            </span>
-                        </div>
-                    )}
-                    {hasCoding && (
-                        <div className="text-sm text-emerald-400 bg-emerald-400/10 p-4 rounded-lg">
-                            Your coding questions were evaluated against hidden test cases. Check the final score above.
-                        </div>
-                    )}
-                </div>
+            <div className="flex-1 flex items-center justify-center p-6 bg-[#171a1b]">
+                <Loader2 size={32} className="animate-spin text-orange-500" />
             </div>
         );
     }

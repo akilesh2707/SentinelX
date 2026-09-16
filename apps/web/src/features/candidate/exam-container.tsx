@@ -74,8 +74,17 @@ export function ExamContainer({ initialAttempt }: ExamContainerProps) {
         }} />;
     }
 
+    if (attempt.status === "SUBMITTED" || attempt.status === "EXPIRED") {
+        router.replace(`/exam/${attempt.id}/result`);
+        return (
+            <div className="flex-1 flex items-center justify-center p-6 bg-[#171a1b]">
+                <Loader2 size={32} className="animate-spin text-orange-500" />
+            </div>
+        );
+    }
+
     if (attempt.status !== "NOT_STARTED") {
-        // Locked / Completed states (SUBMITTED, EXPIRED, ABANDONED)
+        // Locked states like ABANDONED
         return (
             <div className="flex-1 flex items-center justify-center p-6 bg-[#171a1b]">
                 <div className="w-full max-w-lg bg-[#fbfaf6] rounded-2xl p-8 shadow-xl text-center border border-[#dedbd2]">

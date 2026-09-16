@@ -36,8 +36,8 @@ export async function POST(
             return NextResponse.json({ error: "Attempt not found" }, { status: 404 });
         }
 
-        if (attempt.status === "SUBMITTED") {
-            // Idempotent return for already submitted
+        if (attempt.status === "SUBMITTED" || attempt.status === "EXPIRED") {
+            // Idempotent return for already finalized attempts
             return NextResponse.json({
                 success: true,
                 attempt: {
@@ -50,7 +50,7 @@ export async function POST(
             });
         }
 
-        if (attempt.status !== "IN_PROGRESS" && attempt.status !== "EXPIRED") {
+        if (attempt.status !== "IN_PROGRESS") {
             return NextResponse.json({ error: `Cannot submit attempt in state ${attempt.status}` }, { status: 403 });
         }
 
