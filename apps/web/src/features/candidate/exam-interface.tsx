@@ -5,7 +5,8 @@ import { Clock, ChevronLeft, ChevronRight, CheckCircle2, Circle, Loader2 } from 
 import { motion, AnimatePresence } from "framer-motion";
 import { useProctoringEngine } from "./use-proctoring-engine";
 import { useMediaProctoring } from "./use-media-proctoring";
-import { Camera, Mic, MicOff, VideoOff } from "lucide-react";
+import { Camera, Mic, MicOff, VideoOff, Camera as CameraIcon } from "lucide-react";
+import { captureSnapshot } from "./snapshot-util";
 
 type AttemptState = {
     id: string;
@@ -79,6 +80,9 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
     const [customInput, setCustomInput] = useState<Record<string, string>>({});
     const [executionResult, setExecutionResult] = useState<Record<string, any>>({});
     const [isRunning, setIsRunning] = useState<Record<string, boolean>>({});
+
+    const [snapshotStatus, setSnapshotStatus] = useState<"idle" | "capturing" | "uploading" | "saved" | "error">("idle");
+    const [snapshotError, setSnapshotError] = useState<string | null>(null);
 
     const isExamActive = attempt.status === "IN_PROGRESS" && !submitResult && timeLeft !== 0;
 
@@ -248,6 +252,61 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
             alert("Failed to submit assessment. Please try again.");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleCaptureSnapshot = async () => {
+        if (!stream) {
+            setSnapshotError("Camera stream not available");
+            return;
+        }
+
+        setSnapshotStatus("capturing");
+        setSnapshotError(null);
+
+        try {
+            // 1. Fetch active incident for testing
+            const incidentRes = await fetch(`/api/attempts/${attempt.id}/active-incident`);
+            const incidentData = await incidentRes.json();
+            
+            if (!incidentRes.ok || !incidentData.incidentId) {
+                throw new Error("No active incident available for testing. Trigger an event first.");
+            }
+
+            // 2. Capture Snapshot
+            const blob = await captureSnapshot(stream);
+            const clientEvidenceId = crypto.randomUUID();
+
+            setSnapshotStatus("uploading");
+
+            // 3. Upload Snapshot
+            const formData = new FormData();
+            formData.append("incidentId", incidentData.incidentId);
+            formData.append("clientEvidenceId", clientEvidenceId);
+            formData.append("type", "CAMERA_SNAPSHOT");
+            formData.append("capturedAt", new Date().toISOString());
+            formData.append("file", blob, "snapshot.webp");
+
+            const uploadRes = await fetch(`/api/attempts/${attempt.id}/evidence`, {
+                method: "POST",
+                body: formData
+            });
+            const uploadData = await uploadRes.json();
+
+            if (!uploadRes.ok) {
+                throw new Error(uploadData.error || "Upload failed");
+            }
+
+            setSnapshotStatus("saved");
+            setTimeout(() => setSnapshotStatus("idle"), 3000);
+        } catch (error: any) {
+            console.error("Snapshot error:", error);
+            setSnapshotStatus("error");
+            setSnapshotError(error.message || "Failed to capture snapshot");
+            setTimeout(() => {
+                setSnapshotStatus("idle");
+                setSnapshotError(null);
+            }, 5000);
         }
     };
 
@@ -464,6 +523,28 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
                                 ) : (
                                     <div className="flex items-center justify-center h-full w-full text-[#a0a19b] text-xs">
                                         {cameraStatus === "loading" ? "Starting camera..." : "Camera unavailable"}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Test Snapshot Controls */}
+                        {attempt.assessment.primaryCamera && cameraStatus === "ready" && stream && (
+                            <div className="mt-3">
+                                <button
+                                    onClick={handleCaptureSnapshot}
+                                    disabled={snapshotStatus !== "idle"}
+                                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-[#303433] hover:bg-[#404443] text-xs font-semibold text-[#fbfaf6] transition-colors disabled:opacity-50"
+                                >
+                                    {snapshotStatus === "idle" && <><CameraIcon size={14} /> Capture Snapshot (Test)</>}
+                                    {snapshotStatus === "capturing" && <><Loader2 size={14} className="animate-spin" /> Capturing...</>}
+                                    {snapshotStatus === "uploading" && <><Loader2 size={14} className="animate-spin" /> Uploading...</>}
+                                    {snapshotStatus === "saved" && <><CheckCircle2 size={14} className="text-emerald-400" /> Saved!</>}
+                                    {snapshotStatus === "error" && <span className="text-red-400">Error</span>}
+                                </button>
+                                {snapshotError && (
+                                    <div className="mt-2 text-[10px] text-red-400 leading-tight">
+                                        {snapshotError}
                                     </div>
                                 )}
                             </div>

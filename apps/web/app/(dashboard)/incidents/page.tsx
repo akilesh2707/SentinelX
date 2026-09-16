@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ShieldAlert, AppWindow, VideoOff, WifiOff, RefreshCcw, Maximize, AlertCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ShieldAlert, AppWindow, VideoOff, WifiOff, RefreshCcw, Maximize, AlertCircle, Camera, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 type Incident = {
     id: string;
@@ -23,6 +24,10 @@ export default function IncidentsPage() {
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    
+    const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
+    const [evidenceData, setEvidenceData] = useState<Record<string, any[]>>({});
+    const [loadingEvidence, setLoadingEvidence] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         async function loadIncidents() {
@@ -52,6 +57,49 @@ export default function IncidentsPage() {
             setIncidents(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i));
         } catch (err: any) {
             alert(err.message);
+        }
+    }
+
+    async function toggleIncident(id: string) {
+        if (expandedIncident === id) {
+            setExpandedIncident(null);
+            return;
+        }
+        
+        setExpandedIncident(id);
+        
+        if (!evidenceData[id]) {
+            setLoadingEvidence(prev => ({ ...prev, [id]: true }));
+            try {
+                const res = await fetch(`/api/incidents/${id}/evidence`);
+                const data = await res.json();
+                if (data.success) {
+                    setEvidenceData(prev => ({ ...prev, [id]: data.evidence || [] }));
+                }
+            } catch (err) {
+                console.error("Failed to load evidence:", err);
+            } finally {
+                setLoadingEvidence(prev => ({ ...prev, [id]: false }));
+            }
+        }
+    }
+
+    async function deleteEvidence(incidentId: string, evidenceId: string) {
+        if (!confirm("Delete this evidence?")) return;
+        try {
+            const res = await fetch(`/api/evidence/${evidenceId}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.success) {
+                setEvidenceData(prev => ({
+                    ...prev,
+                    [incidentId]: prev[incidentId].filter(e => e.id !== evidenceId)
+                }));
+            } else {
+                alert(data.error || "Failed to delete");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error deleting evidence");
         }
     }
 
@@ -95,11 +143,17 @@ export default function IncidentsPage() {
                             </thead>
                             <tbody>
                                 {incidents.map((incident) => (
-                                    <tr key={incident.id} className="border-b border-[#dedbd2] last:border-0 hover:bg-[#fbfaf6]">
-                                        <td className="p-4">
-                                            <div className="font-semibold text-[#171a1b]">{incident.attempt.candidate.name}</div>
-                                            <div className="text-xs text-[#737777]">{incident.attempt.assessment.title}</div>
-                                        </td>
+                                    <React.Fragment key={incident.id}>
+                                        <tr className="border-b border-[#dedbd2] last:border-0 hover:bg-[#fbfaf6]">
+                                            <td className="p-4 flex items-center gap-2">
+                                                <button onClick={() => toggleIncident(incident.id)} className="p-1 hover:bg-gray-200 rounded">
+                                                    {expandedIncident === incident.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                </button>
+                                                <div>
+                                                    <div className="font-semibold text-[#171a1b]">{incident.attempt.candidate.name}</div>
+                                                    <div className="text-xs text-[#737777]">{incident.attempt.assessment.title}</div>
+                                                </div>
+                                            </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">
                                                 {incident.type === "WINDOW_BLUR" || incident.type === "TAB_SWITCH" ? <AppWindow size={14} className="text-[#737777]" /> :
@@ -145,6 +199,49 @@ export default function IncidentsPage() {
                                             )}
                                         </td>
                                     </tr>
+                                    {expandedIncident === incident.id && (
+                                        <tr className="bg-[#f4f4f4] border-b border-[#dedbd2]">
+                                            <td colSpan={6} className="p-6">
+                                                <h4 className="text-sm font-bold text-[#171a1b] mb-4 flex items-center gap-2">
+                                                    <Camera size={16} /> Evidence Captured
+                                                </h4>
+                                                
+                                                {loadingEvidence[incident.id] ? (
+                                                    <div className="text-sm text-[#737777]">Loading evidence...</div>
+                                                ) : evidenceData[incident.id]?.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-4">
+                                                        {evidenceData[incident.id].map((ev: any) => (
+                                                            <div key={ev.id} className="bg-white p-2 rounded-lg border border-[#dedbd2] shadow-sm flex flex-col gap-2 group relative">
+                                                                <div className="w-64 h-48 bg-black rounded overflow-hidden relative">
+                                                                    {/* Use standard img tag with auth API route */}
+                                                                    <img 
+                                                                        src={`/api/evidence/${ev.id}`} 
+                                                                        alt="Evidence Snapshot" 
+                                                                        className="w-full h-full object-contain"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex justify-between items-center px-1">
+                                                                    <div className="text-xs text-[#737777] font-mono">
+                                                                        {new Date(ev.capturedAt).toLocaleTimeString()}
+                                                                    </div>
+                                                                    <button 
+                                                                        onClick={() => deleteEvidence(incident.id, ev.id)}
+                                                                        className="text-red-500 hover:text-red-700 p-1 bg-red-50 hover:bg-red-100 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        title="Delete Evidence"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-sm text-[#737777] italic">No evidence captured for this incident.</div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>
