@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../src/lib/prisma";
+import { auth } from "../../../auth";
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const questions = await prisma.question.findMany({
+            where: {
+                organizerId: session.user.id
+            },
             orderBy: {
                 createdAt: "desc",
             },
@@ -49,6 +58,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const body = await request.json();
 
         if (!body.title || !body.type || !body.difficulty) {
@@ -73,6 +87,7 @@ export async function POST(request: Request) {
 
         const question = await prisma.question.create({
             data: {
+                organizerId: session.user.id,
                 type: body.type,
                 title: body.title,
                 description: body.description || null,

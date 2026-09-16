@@ -62,6 +62,9 @@ model Question {
   id   String       @id @default(cuid())
   type QuestionType
 
+  organizerId String
+  organizer   Organizer @relation(fields: [organizerId], references: [id])
+
   title        String
   description  String?
   topic        String?
@@ -268,6 +271,7 @@ model Organizer {
 
   assessments Assessment[]
   events      Event[]
+  questions   Question[]
 }
 
 enum ProctoringEventType {
