@@ -1,12 +1,21 @@
 import { prisma } from "../prisma";
 import { runPythonCode } from "./docker-runner";
 
+export type TestCaseStatus = "PASSED" | "FAILED" | "TIMEOUT" | "ERROR";
+
+export type TestCaseResult = {
+    id: string;
+    status: TestCaseStatus;
+    runtimeMs: number;
+};
+
 export type CodingEvaluationResult = {
     passedTests: number;
     totalTests: number;
     score: number;
     maxScore: number;
     isCorrect: boolean;
+    details?: TestCaseResult[];
 };
 
 export async function evaluateCodingQuestion(attemptQuestionId: string): Promise<CodingEvaluationResult | null> {
@@ -32,68 +41,83 @@ export async function evaluateCodingQuestion(attemptQuestionId: string): Promise
         return null;
     }
 
-    // Prevent re-evaluation
-    if (attemptQuestion.answer.score !== null) {
+    // Prevent re-evaluation if already fully evaluated (score and details present)
+    if (attemptQuestion.answer.score !== null && attemptQuestion.answer.evaluationDetails !== null) {
         return {
             passedTests: -1, // Hidden internally for cached results
             totalTests: attemptQuestion.question.testCases.length,
             score: attemptQuestion.answer.score,
             maxScore: attemptQuestion.marks,
-            isCorrect: !!attemptQuestion.answer.isCorrect
+            isCorrect: !!attemptQuestion.answer.isCorrect,
+            details: attemptQuestion.answer.evaluationDetails as any
         };
     }
 
     const testCases = attemptQuestion.question.testCases;
-    let earnedCodingMarks = 0;
-    let totalCodingMarks = testCases.reduce((sum, tc) => sum + tc.marks, 0);
+    let earnedTestMarks = 0;
+    let totalTestMarks = testCases.reduce((sum, tc) => sum + tc.marks, 0);
     let passedTests = 0;
-    let executionStopped = false;
+    
+    const evaluationDetails: TestCaseResult[] = [];
 
     for (const test of testCases) {
-        if (executionStopped) {
-            // Further tests get 0 marks
-            continue;
-        }
-
+        let status: TestCaseStatus = "FAILED";
         const result = await runPythonCode(attemptQuestion.answer.submittedCode, test.input);
 
         if (result.timedOut) {
-            // Execution abuse / infinite loop - halt evaluation
-            executionStopped = true;
-            continue;
-        }
-
-        if (result.exitCode === 0) {
-            // Normalize trailing whitespace and newlines for robust comparison
+            status = "TIMEOUT";
+        } else if (result.exitCode !== 0) {
+            status = "ERROR";
+            console.error("Docker Execution Error stderr:", result.stderr);
+        } else {
             const actual = result.stdout.trimEnd();
             const expected = test.expectedOutput.trimEnd();
 
             if (actual === expected) {
-                earnedCodingMarks += test.marks;
+                status = "PASSED";
+                earnedTestMarks += test.marks;
                 passedTests++;
+            } else {
+                status = "FAILED";
             }
-        } else {
-            // Runtime error or syntax error -> fail this test, but keep evaluating others unless we want to halt on all errors.
-            // For MVP, we continue evaluating subsequent tests on normal failure/runtime error.
         }
+
+        evaluationDetails.push({
+            id: test.id,
+            status,
+            runtimeMs: result.durationMs
+        });
     }
 
-    const isCorrect = passedTests === testCases.length && testCases.length > 0;
+    let finalScore = 0;
+    let isCorrect = false;
 
-    // Persist individually using a short transaction / update
+    if (totalTestMarks > 0) {
+        finalScore = Math.round((earnedTestMarks / totalTestMarks) * attemptQuestion.marks);
+        if (finalScore < 0) finalScore = 0;
+        if (finalScore > attemptQuestion.marks) finalScore = attemptQuestion.marks;
+        isCorrect = passedTests === testCases.length && testCases.length > 0;
+    } else {
+        // total test marks == 0 -> invalid configuration
+        finalScore = 0;
+        isCorrect = false;
+    }
+
     await prisma.answer.update({
         where: { id: attemptQuestion.answer.id },
         data: {
-            score: earnedCodingMarks,
-            isCorrect: isCorrect
+            score: finalScore,
+            isCorrect: isCorrect,
+            evaluationDetails: evaluationDetails as any
         }
     });
 
     return {
         passedTests,
         totalTests: testCases.length,
-        score: earnedCodingMarks,
-        maxScore: totalCodingMarks,
-        isCorrect
+        score: finalScore,
+        maxScore: attemptQuestion.marks,
+        isCorrect,
+        details: evaluationDetails
     };
 }

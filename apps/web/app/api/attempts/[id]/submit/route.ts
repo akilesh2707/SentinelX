@@ -61,17 +61,21 @@ export async function POST(
         // --- PRE-TRANSACTION CODING EVALUATION ---
         // Run Docker evaluations independently and outside of the Prisma transaction.
         // This avoids holding DB locks during slow test cases and prevents double evaluation.
-        const codingQuestions = attempt.questions.filter(aq =>
-            aq.question.type === "CODING" &&
-            aq.answer &&
-            aq.answer.submittedCode &&
-            aq.answer.score === null
-        );
+        const isExpiredBeforeEval = attempt.expiresAt && new Date() >= attempt.expiresAt;
 
-        const { evaluateCodingQuestion } = await import("../../../../../src/lib/code-execution/coding-judge");
+        if (!isExpiredBeforeEval) {
+            const codingQuestions = attempt.questions.filter(aq =>
+                aq.question.type === "CODING" &&
+                aq.answer &&
+                aq.answer.submittedCode &&
+                aq.answer.score === null
+            );
 
-        for (const cq of codingQuestions) {
-            await evaluateCodingQuestion(cq.id);
+            const { evaluateCodingQuestion } = await import("../../../../../src/lib/code-execution/coding-judge");
+
+            for (const cq of codingQuestions) {
+                await evaluateCodingQuestion(cq.id);
+            }
         }
 
         // Refetch attempt to get updated Answer scores from the coding evaluation

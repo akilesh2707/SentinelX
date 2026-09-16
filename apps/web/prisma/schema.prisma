@@ -214,9 +214,10 @@ model Answer {
   submittedCode    String?
   language         String?
 
-  score      Int?
-  isCorrect  Boolean?
-  answeredAt DateTime?
+  score             Int?
+  isCorrect         Boolean?
+  evaluationDetails Json?
+  answeredAt        DateTime?
 
   attemptQuestion AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Cascade)
 
