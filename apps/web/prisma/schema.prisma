@@ -339,8 +339,9 @@ model Incident {
 
   metadata Json?
 
-  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  events  IncidentEvent[]
+  attempt  AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  events   IncidentEvent[]
+  evidence Evidence[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -361,5 +362,28 @@ model IncidentEvent {
   createdAt DateTime @default(now())
 
   @@unique([incidentId, proctoringEventId])
+  @@index([incidentId])
+}
+
+enum EvidenceType {
+  CAMERA_SNAPSHOT
+}
+
+model Evidence {
+  id               String       @id @default(cuid())
+  incidentId       String
+  clientEvidenceId String?
+  type             EvidenceType
+
+  storageKey String
+  mimeType   String
+  sizeBytes  Int
+
+  capturedAt DateTime
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId, clientEvidenceId])
   @@index([incidentId])
 }
