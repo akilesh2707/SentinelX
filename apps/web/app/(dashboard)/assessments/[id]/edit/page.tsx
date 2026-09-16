@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { QuestionsManager } from "./components/questions-manager";
 
 type Assessment = {
     id: string;
@@ -278,6 +279,21 @@ export default function EditAssessmentPage() {
                                     </select>
                                 </Field>
                             </div>
+                        </section>
+                        
+                        <section className="rounded-xl border border-black/10 bg-[#faf8f3] p-6">
+                            <QuestionsManager
+                                assessmentId={id}
+                                status={status}
+                                assessmentType={type}
+                                onUpdateTotals={(newMcqCount, newCodingCount, newTotalMarks) => {
+                                    // In a real app we'd fetch or update optimistically.
+                                    // For now, we will just reload the page or let the user see the updated fields if we hook it up.
+                                    setMcqCount(newMcqCount);
+                                    setCodingCount(newCodingCount);
+                                    setTotalMarks(newTotalMarks);
+                                }}
+                            />
                         </section>
 
                         <section className="rounded-xl border border-black/10 bg-[#faf8f3] p-6">
