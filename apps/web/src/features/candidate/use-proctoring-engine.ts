@@ -26,11 +26,20 @@ interface ProctoringEventPayload {
 interface UseProctoringEngineProps {
     attemptId: string | null;
     status: string; // Attempt status (IN_PROGRESS, etc)
+    tabDetection?: boolean;
+    browserLock?: boolean;
     onSecurityEvent?: (type: ProctoringEventType, clientEventId: string) => void;
     onIncidentsCreated?: (mapping: Record<string, string>) => void;
 }
 
-export function useProctoringEngine({ attemptId, status, onSecurityEvent, onIncidentsCreated }: UseProctoringEngineProps) {
+export function useProctoringEngine({ 
+    attemptId, 
+    status, 
+    tabDetection = true,
+    browserLock = true,
+    onSecurityEvent, 
+    onIncidentsCreated 
+}: UseProctoringEngineProps) {
     const queueRef = useRef<ProctoringEventPayload[]>([]);
     const isActive = attemptId !== null && status === "IN_PROGRESS";
     const startedRef = useRef(false);
@@ -111,6 +120,7 @@ export function useProctoringEngine({ attemptId, status, onSecurityEvent, onInci
         }
 
         const handleVisibilityChange = () => {
+            if (!tabDetection) return;
             if (document.visibilityState === "hidden") {
                 recordEvent("TAB_SWITCH", { state: "hidden" });
             } else if (document.visibilityState === "visible") {
@@ -119,10 +129,12 @@ export function useProctoringEngine({ attemptId, status, onSecurityEvent, onInci
         };
 
         const handleBlur = () => {
+            if (!tabDetection) return;
             recordEvent("WINDOW_BLUR");
         };
 
         const handleFullscreenChange = () => {
+            if (!browserLock) return;
             if (!document.fullscreenElement) {
                 recordEvent("FULLSCREEN_EXIT");
             }
@@ -149,24 +161,34 @@ export function useProctoringEngine({ attemptId, status, onSecurityEvent, onInci
             }
         };
 
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        window.addEventListener("blur", handleBlur);
-        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        if (tabDetection) {
+            document.addEventListener("visibilitychange", handleVisibilityChange);
+            window.addEventListener("blur", handleBlur);
+        }
+        
+        if (browserLock) {
+            document.addEventListener("fullscreenchange", handleFullscreenChange);
+        }
+        
         window.addEventListener("offline", handleOffline);
         window.addEventListener("online", handleOnline);
         window.addEventListener("beforeunload", handleBeforeUnload);
 
         return () => {
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-            window.removeEventListener("blur", handleBlur);
-            document.removeEventListener("fullscreenchange", handleFullscreenChange);
+            if (tabDetection) {
+                document.removeEventListener("visibilitychange", handleVisibilityChange);
+                window.removeEventListener("blur", handleBlur);
+            }
+            if (browserLock) {
+                document.removeEventListener("fullscreenchange", handleFullscreenChange);
+            }
             window.removeEventListener("offline", handleOffline);
             window.removeEventListener("online", handleOnline);
             window.removeEventListener("beforeunload", handleBeforeUnload);
             // Flush on unmount
             flushQueue();
         };
-    }, [isActive, recordEvent, flushQueue, attemptId]);
+    }, [isActive, recordEvent, flushQueue, attemptId, tabDetection, browserLock]);
 
     return {
         recordEvent

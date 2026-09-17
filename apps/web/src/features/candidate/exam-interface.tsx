@@ -18,6 +18,10 @@ type AttemptState = {
     assessment: {
         primaryCamera: boolean;
         audioMonitoring: boolean;
+        browserLock: boolean;
+        tabDetection: boolean;
+        autoSubmit: boolean;
+        aiProctoring: boolean;
     };
 };
 
@@ -71,6 +75,19 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
     const pendingSnapshotsRef = useRef<Record<string, { blob: Blob, capturedAt: string }>>({});
     const pendingIncidentsRef = useRef<Record<string, string>>({});
     const processedAutomaticEvidenceRef = useRef<Set<string>>(new Set());
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    
+    // Check initial fullscreen state
+    useEffect(() => {
+        setIsFullscreen(!!document.fullscreenElement);
+        
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    }, []);
 
     const handleUploadEvidence = (clientEventId: string, incidentId: string, blob: Blob, capturedAt: string) => {
         if (processedAutomaticEvidenceRef.current.has(clientEventId)) return;
@@ -97,6 +114,8 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
     const { recordEvent } = useProctoringEngine({ 
         attemptId: attempt.id, 
         status: attempt.status,
+        tabDetection: attempt.assessment.tabDetection,
+        browserLock: attempt.assessment.browserLock,
         onSecurityEvent: (type, clientEventId) => {
             if (activeStreamRef.current) {
                 captureSnapshot(activeStreamRef.current)
@@ -154,7 +173,7 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
 
     useAiProctoring({
         stream,
-        isActive: isExamActive && attempt.assessment.primaryCamera,
+        isActive: isExamActive && attempt.assessment.aiProctoring,
         recordEvent
     });
 
@@ -216,6 +235,12 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
     }, [attempt.expiresAt]);
+
+    useEffect(() => {
+        if (timeLeft === 0 && attempt.assessment.autoSubmit && !isSubmitting && !submitResult) {
+            handleSubmit();
+        }
+    }, [timeLeft, attempt.assessment.autoSubmit, isSubmitting, submitResult]);
 
     const formatTime = (ms: number) => {
         const totalSeconds = Math.floor(ms / 1000);
@@ -436,6 +461,32 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
     }
 
     const currentQuestion = questions[currentIndex];
+
+    const enterFullscreen = () => {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error("Error attempting to enable fullscreen:", err);
+        });
+    };
+
+    if (attempt.assessment.browserLock && !isFullscreen) {
+        return (
+            <div className="flex h-[60vh] items-center justify-center">
+                <div className="rounded-xl bg-[#fbfaf6] p-8 text-center max-w-md shadow-xl border border-[#dedbd2]">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
+                        <Camera size={32} className="text-orange-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-[#171a1b] mb-2">Fullscreen Required</h2>
+                    <p className="text-[#737777] mb-8">This assessment requires you to remain in fullscreen mode. Please click the button below to continue.</p>
+                    <button
+                        onClick={enterFullscreen}
+                        className="w-full py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-500 transition-colors"
+                    >
+                        Enter Fullscreen
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 flex overflow-hidden relative">

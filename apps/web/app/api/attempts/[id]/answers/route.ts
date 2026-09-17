@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../src/lib/prisma";
 import { requireCandidateAttempt } from "../../../../../src/lib/auth/candidate-session";
+import { finalizeAttempt } from "../../../../../src/lib/assessment/finalize-attempt";
 
 // GET /api/attempts/[id]/answers
 export async function GET(
@@ -30,7 +31,8 @@ export async function GET(
         }
 
         if (attempt.expiresAt && new Date() >= attempt.expiresAt) {
-            return NextResponse.json({ error: "Attempt has expired" }, { status: 403 });
+            await finalizeAttempt(attemptId);
+            return NextResponse.json({ error: "Attempt has expired and was automatically submitted" }, { status: 403 });
         }
 
         const answers = await prisma.answer.findMany({
@@ -92,7 +94,8 @@ export async function POST(
         }
 
         if (attempt.expiresAt && new Date() >= attempt.expiresAt) {
-            return NextResponse.json({ error: "Attempt has expired" }, { status: 403 });
+            await finalizeAttempt(attemptId);
+            return NextResponse.json({ error: "Attempt has expired and was automatically submitted" }, { status: 403 });
         }
 
         // 2. Validate AttemptQuestion belongs to Attempt and fetch related Question

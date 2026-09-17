@@ -12,8 +12,17 @@ type ExamContainerProps = {
         status: string;
         startedAt: Date | null;
         expiresAt: Date | null;
-        candidate: { name: string; email: string };
-        assessment: { title: string; duration: number; totalMarks: number; primaryCamera: boolean; audioMonitoring: boolean };
+        assessment: { 
+            title: string; 
+            duration: number; 
+            totalMarks: number; 
+            primaryCamera: boolean; 
+            audioMonitoring: boolean;
+            browserLock: boolean;
+            tabDetection: boolean;
+            autoSubmit: boolean;
+            aiProctoring: boolean;
+        };
         _count: { questions: number };
     };
 };
@@ -70,6 +79,10 @@ export function ExamContainer({ initialAttempt }: ExamContainerProps) {
             assessment: {
                 primaryCamera: attempt.assessment.primaryCamera,
                 audioMonitoring: attempt.assessment.audioMonitoring,
+                browserLock: attempt.assessment.browserLock,
+                tabDetection: attempt.assessment.tabDetection,
+                autoSubmit: attempt.assessment.autoSubmit,
+                aiProctoring: attempt.assessment.aiProctoring,
             }
         }} />;
     }

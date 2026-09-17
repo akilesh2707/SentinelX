@@ -13,6 +13,9 @@ model Assessment {
   description String?
   type        String
 
+  startDate DateTime?
+  endDate   DateTime?
+
   mcqCount     Int    @default(0)
   codingCount  Int    @default(0)
   totalMarks   Int

@@ -77,6 +77,27 @@ export async function POST(request: Request) {
             }
         }
 
+        let parsedStartDate: Date | null = null;
+        let parsedEndDate: Date | null = null;
+        
+        if (body.startDate) {
+            parsedStartDate = new Date(body.startDate);
+            if (isNaN(parsedStartDate.getTime())) {
+                return NextResponse.json({ success: false, error: "Invalid startDate format" }, { status: 400 });
+            }
+        }
+        
+        if (body.endDate) {
+            parsedEndDate = new Date(body.endDate);
+            if (isNaN(parsedEndDate.getTime())) {
+                return NextResponse.json({ success: false, error: "Invalid endDate format" }, { status: 400 });
+            }
+        }
+        
+        if (parsedStartDate && parsedEndDate && parsedStartDate >= parsedEndDate) {
+            return NextResponse.json({ success: false, error: "startDate must be before endDate" }, { status: 400 });
+        }
+
         // Fetch questions to derive truth
         const dbQuestions = await prisma.question.findMany({
             where: { id: { in: Array.from(uniqueQuestionIds) as string[] } },
@@ -116,6 +137,9 @@ export async function POST(request: Request) {
                     passingScore: Number(body.passingScore || 0),
                     difficulty: body.difficulty,
                     duration: Number(body.duration || 60),
+                    
+                    startDate: parsedStartDate,
+                    endDate: parsedEndDate,
 
                     maxAttempts: body.maxAttempts || "1",
                     lateJoin: Boolean(body.lateJoin),

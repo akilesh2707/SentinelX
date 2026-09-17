@@ -20,7 +20,12 @@ export async function POST(
             where: { id: attemptId },
             include: {
                 assessment: {
-                    select: { duration: true }
+                    select: { 
+                        duration: true,
+                        startDate: true,
+                        endDate: true,
+                        lateJoin: true
+                    }
                 }
             }
         });
@@ -54,12 +59,27 @@ export async function POST(
             return NextResponse.json({ error: `Cannot start an attempt in ${attempt.status} state` }, { status: 403 });
         }
 
-        // 4. Calculate timing
+        // 4. Validate Assessment Window and Late Join
         const now = new Date();
+        const { startDate, endDate, lateJoin } = attempt.assessment;
+
+        if (startDate && now < startDate) {
+            return NextResponse.json({ error: "Assessment has not started yet" }, { status: 403 });
+        }
+
+        if (endDate && now > endDate) {
+            return NextResponse.json({ error: "Assessment window has closed" }, { status: 403 });
+        }
+
+        if (startDate && now > startDate && !lateJoin) {
+            return NextResponse.json({ error: "Late join is not permitted for this assessment" }, { status: 403 });
+        }
+
+        // 5. Calculate timing
         const durationMs = attempt.assessment.duration * 60000;
         const expiresAt = new Date(now.getTime() + durationMs);
 
-        // 5. Atomic Update
+        // 6. Atomic Update
         // Use updateMany to safely constrain on status: "NOT_STARTED" to prevent concurrent double-starts
         const updateResult = await prisma.assessmentAttempt.updateMany({
             where: {

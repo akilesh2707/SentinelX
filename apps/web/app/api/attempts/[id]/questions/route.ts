@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../src/lib/prisma";
 import { requireCandidateAttempt } from "../../../../../src/lib/auth/candidate-session";
+import { finalizeAttempt } from "../../../../../src/lib/assessment/finalize-attempt";
 
 export async function GET(
     req: NextRequest,
@@ -30,7 +31,9 @@ export async function GET(
         }
 
         if (attempt.expiresAt && new Date() >= attempt.expiresAt) {
-            return NextResponse.json({ error: "Attempt has expired" }, { status: 403 });
+            // Lazy Evaluation
+            await finalizeAttempt(attemptId);
+            return NextResponse.json({ error: "Attempt has expired and was automatically submitted" }, { status: 403 });
         }
 
         // 2. Fetch securely

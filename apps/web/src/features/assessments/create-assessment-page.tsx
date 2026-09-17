@@ -61,6 +61,8 @@ export default function CreateAssessmentPage() {
     const [maxAttempts, setMaxAttempts] = useState("1");
     const [accessCode, setAccessCode] = useState("");
     const [joinLink, setJoinLink] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     const [securityLevel, setSecurityLevel] = useState("high");
     const [identityVerification, setIdentityVerification] = useState(false);
@@ -158,6 +160,8 @@ export default function CreateAssessmentPage() {
                     autoSubmit,
                     randomizeQuestions,
                     negativeMarking,
+                    startDate: startDate ? new Date(startDate).toISOString() : null,
+                    endDate: endDate ? new Date(endDate).toISOString() : null,
 
                     securityLevel,
                     identityVerification,
@@ -421,6 +425,8 @@ export default function CreateAssessmentPage() {
                                     <Field label="Start Window">
                                         <input
                                             type="datetime-local"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
                                             className="input"
                                         />
                                     </Field>
@@ -428,6 +434,8 @@ export default function CreateAssessmentPage() {
                                     <Field label="End Window">
                                         <input
                                             type="datetime-local"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
                                             className="input"
                                         />
                                     </Field>

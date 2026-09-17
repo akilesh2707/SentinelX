@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../src/lib/prisma";
 import { evaluateCodingQuestion } from "../../../../../src/lib/code-execution/coding-judge";
 import { requireCandidateAttempt } from "../../../../../src/lib/auth/candidate-session";
+import { finalizeAttempt } from "../../../../../src/lib/assessment/finalize-attempt";
 
 export async function POST(
     req: NextRequest,
@@ -32,11 +33,12 @@ export async function POST(
         }
 
         if (attempt.status !== "IN_PROGRESS") {
-            return NextResponse.json({ error: `Cannot evaluate in state ${attempt.status}` }, { status: 403 });
+            return NextResponse.json({ error: "Coding evaluation is only available while attempt is in progress" }, { status: 403 });
         }
 
         if (attempt.expiresAt && new Date() >= attempt.expiresAt) {
-            return NextResponse.json({ error: "Attempt has expired" }, { status: 403 });
+            await finalizeAttempt(attemptId);
+            return NextResponse.json({ error: "Attempt has expired and was automatically submitted" }, { status: 403 });
         }
 
         // Validate attemptQuestion belongs to attempt

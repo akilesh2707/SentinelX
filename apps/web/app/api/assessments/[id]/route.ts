@@ -111,6 +111,9 @@ export async function PATCH(
                 passingScore: body.passingScore !== undefined ? Number(body.passingScore) : existing.passingScore,
                 difficulty: body.difficulty !== undefined ? body.difficulty : existing.difficulty,
                 duration: body.duration !== undefined ? Number(body.duration) : existing.duration,
+                
+                startDate: body.startDate !== undefined ? (body.startDate ? new Date(body.startDate) : null) : existing.startDate,
+                endDate: body.endDate !== undefined ? (body.endDate ? new Date(body.endDate) : null) : existing.endDate,
 
                 maxAttempts: body.maxAttempts !== undefined ? body.maxAttempts : existing.maxAttempts,
                 lateJoin: body.lateJoin !== undefined ? Boolean(body.lateJoin) : existing.lateJoin,
