@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../src/lib/prisma";
+import { auth } from "../../../../auth";
 
 export async function GET(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const params = await props.params;
         const candidateId = params.id;
+
+        // Verify authorization: The candidate must have at least one attempt for this organizer
+        const hasAuthorization = await prisma.assessmentAttempt.findFirst({
+            where: {
+                candidateId,
+                assessment: { organizerId }
+            }
+        });
+
+        if (!hasAuthorization) {
+            return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
+        }
 
         const candidate = await prisma.candidate.findUnique({
             where: { id: candidateId },
@@ -18,14 +37,19 @@ export async function GET(
                 phone: true,
                 createdAt: true,
                 attempts: {
-                    orderBy: { createdAt: "desc" },
+                    where: {
+                        assessment: { organizerId }
+                    },
+                    orderBy: { startedAt: "desc" },
                     select: {
                         id: true,
                         status: true,
                         score: true,
                         maxScore: true,
+                        riskScore: true,
                         startedAt: true,
                         submittedAt: true,
+                        assessmentId: true,
                         assessment: {
                             select: { title: true }
                         }
@@ -48,10 +72,12 @@ export async function GET(
 
             return {
                 attemptId: attempt.id,
+                assessmentId: attempt.assessmentId,
                 assessmentTitle: attempt.assessment.title,
                 status: attempt.status,
                 score: attempt.score,
                 maxScore: attempt.maxScore,
+                riskScore: attempt.riskScore,
                 percentage,
                 startedAt: attempt.startedAt,
                 submittedAt: attempt.submittedAt

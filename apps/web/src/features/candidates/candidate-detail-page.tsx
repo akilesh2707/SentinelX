@@ -11,6 +11,7 @@ type AttemptHistory = {
     status: string;
     score: number | null;
     maxScore: number | null;
+    riskScore: number;
     percentage: number | null;
     startedAt: string | null;
     submittedAt: string | null;
@@ -151,13 +152,24 @@ export default function CandidateDetailPage() {
                                                 <span className="text-emerald-600 ml-2">({attempt.percentage}%)</span>
                                             </span>
                                         )}
+                                        <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-700 ml-2">
+                                            Risk: {attempt.riskScore}
+                                        </span>
                                     </div>
-                                    <Link
-                                        href={`/results/${attempt.attemptId}`}
-                                        className="inline-flex items-center gap-1 text-sm font-bold text-[#303433] hover:text-emerald-600 transition-colors"
-                                    >
-                                        View Detail <ChevronRight size={16} />
-                                    </Link>
+                                    <div className="flex gap-4">
+                                        <Link
+                                            href={`/results/${attempt.attemptId}`}
+                                            className="inline-flex items-center gap-1 text-sm font-bold text-[#303433] hover:text-emerald-600 transition-colors"
+                                        >
+                                            Results <ChevronRight size={16} />
+                                        </Link>
+                                        <Link
+                                            href={`/proctoring/${attempt.attemptId}`}
+                                            className="inline-flex items-center gap-1 text-sm font-bold text-[#303433] hover:text-emerald-600 transition-colors"
+                                        >
+                                            Proctoring <ChevronRight size={16} />
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         ))

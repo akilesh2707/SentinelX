@@ -1,14 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../src/lib/prisma";
+import { auth } from "../../../auth";
+
+type AttemptStatus = "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "EXPIRED" | "ABANDONED";
 
 export async function GET(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
         const { searchParams } = new URL(req.url);
         const search = searchParams.get("search");
-        const assessmentId = searchParams.get("assessmentId");
-        const status = searchParams.get("status");
+        const status = searchParams.get("status") as AttemptStatus | null;
+        
+        const pageParam = searchParams.get("page");
+        const pageSizeParam = searchParams.get("pageSize");
 
-        const where: any = {};
+        let page = 1;
+        if (pageParam) {
+            const parsedPage = parseInt(pageParam, 10);
+            if (!isNaN(parsedPage) && parsedPage >= 1) {
+                page = parsedPage;
+            }
+        }
+
+        let pageSize = 50;
+        if (pageSizeParam) {
+            const parsedLimit = parseInt(pageSizeParam, 10);
+            if (!isNaN(parsedLimit) && parsedLimit >= 1) {
+                pageSize = Math.min(parsedLimit, 100);
+            }
+        }
+
+        const skip = (page - 1) * pageSize;
+
+        // Base where: Candidate must have at least one attempt for an assessment owned by this organizer
+        const where: any = {
+            attempts: {
+                some: {
+                    assessment: { organizerId }
+                }
+            }
+        };
 
         if (search) {
             where.OR = [
@@ -17,54 +53,56 @@ export async function GET(req: NextRequest) {
             ];
         }
 
-        const attemptFilters: any = {};
-        if (assessmentId) attemptFilters.assessmentId = assessmentId;
+        const attemptFilters: any = {
+            assessment: { organizerId }
+        };
 
         if (status) {
-            const validStatuses = ["NOT_STARTED", "IN_PROGRESS", "SUBMITTED", "EXPIRED", "ABANDONED"];
+            const validStatuses: AttemptStatus[] = ["NOT_STARTED", "IN_PROGRESS", "SUBMITTED", "EXPIRED", "ABANDONED"];
             if (!validStatuses.includes(status)) {
                 return NextResponse.json({ error: "Invalid status parameter" }, { status: 400 });
             }
             attemptFilters.status = status;
+            
+            // If filtering by status, the candidate MUST have an attempt matching this status for this organizer
+            where.attempts.some.status = status;
         }
 
-        if (Object.keys(attemptFilters).length > 0) {
-            where.attempts = {
-                some: attemptFilters
-            };
-        }
-
-        const candidates = await prisma.candidate.findMany({
-            where,
-            orderBy: { createdAt: "desc" },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                createdAt: true,
-                attempts: {
-                    where: Object.keys(attemptFilters).length > 0 ? attemptFilters : undefined,
-                    orderBy: { createdAt: "desc" },
-                    select: {
-                        id: true,
-                        status: true,
-                        score: true,
-                        maxScore: true,
-                        createdAt: true,
-                        assessment: {
-                            select: { title: true }
+        const [totalRecords, candidates] = await Promise.all([
+            prisma.candidate.count({ where }),
+            prisma.candidate.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: pageSize,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    createdAt: true,
+                    attempts: {
+                        where: attemptFilters,
+                        orderBy: { createdAt: "desc" },
+                        select: {
+                            id: true,
+                            status: true,
+                            score: true,
+                            maxScore: true,
+                            createdAt: true,
+                            assessment: {
+                                select: { title: true }
+                            }
                         }
                     }
                 }
-            }
-        });
+            })
+        ]);
 
         const safeCandidates = candidates.map(c => {
             const attemptsCount = c.attempts.length;
             const submittedCount = c.attempts.filter(a => a.status === "SUBMITTED").length;
 
-            // Because attempts are ordered by createdAt desc, the first one is the latest (for the subset)
             const latestAttempt = c.attempts.length > 0 ? c.attempts[0] : null;
 
             return {
@@ -83,9 +121,17 @@ export async function GET(req: NextRequest) {
             };
         });
 
+        const totalPages = Math.ceil(totalRecords / pageSize);
+
         return NextResponse.json({
             success: true,
-            candidates: safeCandidates
+            candidates: safeCandidates,
+            pagination: {
+                page,
+                pageSize,
+                totalRecords,
+                totalPages
+            }
         });
 
     } catch (error) {
