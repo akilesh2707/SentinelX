@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useProctoringEngine } from "./use-proctoring-engine";
 import { useMediaProctoring } from "./use-media-proctoring";
+import { useAiProctoring } from "./use-ai-proctoring";
 import { Camera, Mic, MicOff, VideoOff, Camera as CameraIcon } from "lucide-react";
 import { captureSnapshot } from "./snapshot-util";
 
@@ -148,6 +149,12 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
         requiresCamera: attempt.assessment.primaryCamera,
         requiresMic: attempt.assessment.audioMonitoring,
         isActive: isExamActive,
+        recordEvent
+    });
+
+    useAiProctoring({
+        stream,
+        isActive: isExamActive && attempt.assessment.primaryCamera,
         recordEvent
     });
 

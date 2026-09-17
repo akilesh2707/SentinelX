@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ShieldAlert, AppWindow, VideoOff, WifiOff, RefreshCcw, Maximize, AlertCircle, Camera, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { ShieldAlert, AppWindow, VideoOff, WifiOff, RefreshCcw, Maximize, AlertCircle, Camera, ChevronDown, ChevronUp, Trash2, ScanFace } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -161,8 +161,13 @@ export default function IncidentsPage() {
                                                  incident.type === "NETWORK_DISCONNECT" ? <WifiOff size={14} className="text-[#737777]" /> :
                                                  incident.type === "PAGE_RELOAD" ? <RefreshCcw size={14} className="text-[#737777]" /> :
                                                  incident.type === "FULLSCREEN_EXIT" ? <Maximize size={14} className="text-[#737777]" /> :
+                                                 incident.type.startsWith("AI_") ? <ScanFace size={14} className="text-purple-600" /> :
                                                  <AlertCircle size={14} className="text-[#737777]" />}
-                                                <span className="text-sm font-medium">{incident.type.replace(/_/g, " ")}</span>
+                                                <span className="text-sm font-medium">
+                                                    {incident.type.startsWith("AI_") 
+                                                        ? "AI / CV: " + incident.type.replace("AI_", "").replace(/_/g, " ")
+                                                        : incident.type.replace(/_/g, " ")}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="p-4">

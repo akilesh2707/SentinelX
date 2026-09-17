@@ -10,7 +10,11 @@ export type ProctoringEventType =
     | "CAMERA_UNAVAILABLE"
     | "MICROPHONE_UNAVAILABLE"
     | "EXAM_STARTED"
-    | "EXAM_SUBMITTED";
+    | "EXAM_SUBMITTED"
+    | "AI_NO_FACE"
+    | "AI_MULTIPLE_FACES"
+    | "AI_LOOKING_AWAY"
+    | "AI_CAMERA_OBSTRUCTED";
 
 interface ProctoringEventPayload {
     clientEventId: string;
