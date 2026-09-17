@@ -27,7 +27,10 @@ export async function GET(
                 status: true,
                 createdAt: true,
                 assessments: {
+                    orderBy: { order: "asc" },
                     select: {
+                        order: true,
+                        roundName: true,
                         assessment: {
                             select: {
                                 id: true,
@@ -59,7 +62,9 @@ export async function GET(
             duration: relation.assessment.duration,
             status: relation.assessment.status,
             questionCount: relation.assessment._count.questions,
-            attemptCount: relation.assessment._count.attempts
+            attemptCount: relation.assessment._count.attempts,
+            order: relation.order,
+            roundName: relation.roundName
         }));
 
         return NextResponse.json({

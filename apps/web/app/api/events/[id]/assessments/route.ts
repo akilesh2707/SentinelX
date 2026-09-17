@@ -17,7 +17,7 @@ export async function POST(
         const eventId = params.id;
         const body = await req.json();
 
-        const { assessmentId } = body;
+        const { assessmentId, roundName } = body;
 
         if (!assessmentId) {
             return NextResponse.json({ error: "assessmentId is required" }, { status: 400 });
@@ -35,6 +35,10 @@ export async function POST(
             return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
         }
 
+        if (event.status !== "DRAFT") {
+            return NextResponse.json({ error: "Cannot add assessments to a non-DRAFT event" }, { status: 400 });
+        }
+
         const existingLink = await prisma.eventAssessment.findUnique({
             where: {
                 eventId_assessmentId: {
@@ -48,14 +52,22 @@ export async function POST(
             return NextResponse.json({ error: "Assessment is already attached to this event" }, { status: 400 });
         }
 
+        // Calculate next order
+        const existingAssessments = await prisma.eventAssessment.findMany({
+            where: { eventId }
+        });
+        const nextOrder = existingAssessments.length + 1;
+
         await prisma.eventAssessment.create({
             data: {
                 eventId,
-                assessmentId
+                assessmentId,
+                order: nextOrder,
+                roundName: roundName || null
             }
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, order: nextOrder });
     } catch (error) {
         console.error("Attach assessment error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Users, BookOpen, Clock, Trash2, Edit, Plus, XCircle, Trash } from "lucide-react";
+import { ArrowLeft, CalendarDays, Users, BookOpen, Clock, Trash2, Edit, Plus, XCircle, Trash, ArrowUp, ArrowDown, Settings } from "lucide-react";
 
 type AttachedAssessment = {
     id: string;
@@ -13,6 +13,8 @@ type AttachedAssessment = {
     status: string;
     questionCount: number;
     attemptCount: number;
+    order: number;
+    roundName: string | null;
 };
 
 type EventDetail = {
@@ -25,13 +27,21 @@ type EventDetail = {
     createdAt: string;
 };
 
+type ProgressionData = {
+    candidate: { id: string; name: string; email: string };
+    totalScore: number;
+    rounds: { assessmentId: string; roundName: string | null; order: number; score: number | null; status: string | null }[];
+};
+
 export default function EventDetailPage() {
     const params = useParams();
     const router = useRouter();
     const eventId = params.id as string;
 
+    const [activeTab, setActiveTab] = useState<"rounds" | "progression">("rounds");
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [assessments, setAssessments] = useState<AttachedAssessment[]>([]);
+    const [progression, setProgression] = useState<ProgressionData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -42,12 +52,23 @@ export default function EventDetailPage() {
 
     // Attach Assessment Modal state
     const [isAttachOpen, setIsAttachOpen] = useState(false);
-    const [attachId, setAttachId] = useState("");
+    const [attachForm, setAttachForm] = useState({ assessmentId: "", roundName: "" });
     const [attaching, setAttaching] = useState(false);
+
+    // Edit Round Metadata Modal state
+    const [isEditRoundOpen, setIsEditRoundOpen] = useState(false);
+    const [editRoundForm, setEditRoundForm] = useState({ assessmentId: "", roundName: "" });
+    const [savingRound, setSavingRound] = useState(false);
 
     useEffect(() => {
         fetchDetail();
     }, [eventId]);
+
+    useEffect(() => {
+        if (activeTab === "progression") {
+            fetchProgression();
+        }
+    }, [activeTab, eventId]);
 
     const fetchDetail = async () => {
         setLoading(true);
@@ -72,6 +93,18 @@ export default function EventDetailPage() {
             setError("Network error loading event details");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchProgression = async () => {
+        try {
+            const res = await fetch(`/api/events/${eventId}/progression`);
+            const data = await res.json();
+            if (data.success) {
+                setProgression(data.progression);
+            }
+        } catch (err) {
+            console.error(err);
         }
     };
 
@@ -126,12 +159,12 @@ export default function EventDetailPage() {
             const res = await fetch(`/api/events/${eventId}/assessments`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ assessmentId: attachId.trim() })
+                body: JSON.stringify({ assessmentId: attachForm.assessmentId.trim(), roundName: attachForm.roundName || null })
             });
             const data = await res.json();
             if (data.success) {
                 setIsAttachOpen(false);
-                setAttachId("");
+                setAttachForm({ assessmentId: "", roundName: "" });
                 fetchDetail();
             } else {
                 alert(data.error || "Failed to attach assessment");
@@ -156,6 +189,74 @@ export default function EventDetailPage() {
         } catch (err) {
             alert("Network error");
         }
+    };
+
+    const handleReorder = async (assessmentIds: string[]) => {
+        try {
+            const res = await fetch(`/api/events/${eventId}/assessments/reorder`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assessmentIds })
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchDetail();
+            } else {
+                alert(data.error || "Failed to reorder");
+            }
+        } catch (err) {
+            alert("Network error");
+        }
+    };
+
+    const moveUp = (index: number) => {
+        if (index === 0) return;
+        const newOrder = [...assessments];
+        const temp = newOrder[index - 1];
+        newOrder[index - 1] = newOrder[index];
+        newOrder[index] = temp;
+        // Optimistic update
+        setAssessments(newOrder);
+        handleReorder(newOrder.map(a => a.id));
+    };
+
+    const moveDown = (index: number) => {
+        if (index === assessments.length - 1) return;
+        const newOrder = [...assessments];
+        const temp = newOrder[index + 1];
+        newOrder[index + 1] = newOrder[index];
+        newOrder[index] = temp;
+        // Optimistic update
+        setAssessments(newOrder);
+        handleReorder(newOrder.map(a => a.id));
+    };
+
+    const handleEditRoundSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingRound(true);
+        try {
+            const res = await fetch(`/api/events/${eventId}/assessments/${editRoundForm.assessmentId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ roundName: editRoundForm.roundName || null })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setIsEditRoundOpen(false);
+                fetchDetail();
+            } else {
+                alert(data.error || "Failed to update round name");
+            }
+        } catch (err) {
+            alert("Network error");
+        } finally {
+            setSavingRound(false);
+        }
+    };
+
+    const openEditRound = (assessmentId: string, currentName: string | null) => {
+        setEditRoundForm({ assessmentId, roundName: currentName || "" });
+        setIsEditRoundOpen(true);
     };
 
     if (loading) {
@@ -239,58 +340,160 @@ export default function EventDetailPage() {
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-[#171a1b] flex items-center gap-2">
-                        <BookOpen size={20} className="text-[#737777]" /> Attached Assessments
-                    </h2>
-                    <button onClick={() => setIsAttachOpen(true)} className="flex items-center gap-2 text-sm font-medium text-white bg-[#171a1b] px-4 py-2 rounded-lg shadow-sm hover:bg-[#303433]">
-                        <Plus size={16} /> Add Assessment
+                
+                <div className="flex border-t border-[#dedbd2] bg-[#fbfaf6]">
+                    <button 
+                        onClick={() => setActiveTab("rounds")}
+                        className={`flex-1 py-3 px-4 text-sm font-bold text-center border-b-2 transition-colors ${activeTab === "rounds" ? "border-emerald-500 text-[#171a1b] bg-white" : "border-transparent text-[#737777] hover:text-[#171a1b] hover:bg-[#fbfaf6]/50"}`}
+                    >
+                        Rounds & Assessments
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab("progression")}
+                        className={`flex-1 py-3 px-4 text-sm font-bold text-center border-b-2 transition-colors ${activeTab === "progression" ? "border-emerald-500 text-[#171a1b] bg-white" : "border-transparent text-[#737777] hover:text-[#171a1b] hover:bg-[#fbfaf6]/50"}`}
+                    >
+                        Candidate Progression
                     </button>
                 </div>
-
-                <div className="bg-white rounded-2xl border border-[#dedbd2] shadow-sm overflow-hidden divide-y divide-[#dedbd2]">
-                    {assessments.length === 0 ? (
-                        <div className="p-8 text-center text-[#737777]">
-                            No assessments are attached to this event yet.
-                        </div>
-                    ) : (
-                        assessments.map((a) => (
-                            <div key={a.id} className="p-6 hover:bg-[#fbfaf6] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-                                <div className="flex flex-col gap-1">
-                                    <div className="font-bold text-[#171a1b] text-lg flex items-center gap-2">
-                                        {a.title}
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${a.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
-                                            {a.status}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-xs font-medium text-[#737777]">
-                                        <span className="flex items-center gap-1"><BookOpen size={14} /> {a.type}</span>
-                                        <span className="flex items-center gap-1"><Clock size={14} /> {a.duration} mins</span>
-                                        <span className="flex items-center gap-1 text-[#171a1b] font-bold px-2 py-0.5 bg-gray-100 rounded">{a.questionCount} Questions</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:items-end gap-3">
-                                    <div className="text-sm font-bold text-[#171a1b]">
-                                        {a.attemptCount} <span className="text-[#737777] font-medium">Attempts</span>
-                                    </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Link href={`/assessments/${a.id}`} className="text-xs font-medium text-[#303433] bg-white border border-[#dedbd2] px-3 py-1.5 rounded hover:bg-[#fbfaf6]">
-                                            View
-                                        </Link>
-                                        <button onClick={() => handleRemoveAssessment(a.id)} className="text-xs font-medium text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded hover:bg-red-100 flex items-center gap-1">
-                                            <Trash size={12} /> Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
             </div>
+
+            {activeTab === "rounds" && (
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-[#171a1b] flex items-center gap-2">
+                            <BookOpen size={20} className="text-[#737777]" /> Event Rounds
+                        </h2>
+                        {event.status === "DRAFT" && (
+                            <button onClick={() => setIsAttachOpen(true)} className="flex items-center gap-2 text-sm font-medium text-white bg-[#171a1b] px-4 py-2 rounded-lg shadow-sm hover:bg-[#303433]">
+                                <Plus size={16} /> Add Round
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-[#dedbd2] shadow-sm overflow-hidden divide-y divide-[#dedbd2]">
+                        {assessments.length === 0 ? (
+                            <div className="p-8 text-center text-[#737777]">
+                                No rounds are attached to this event yet.
+                            </div>
+                        ) : (
+                            assessments.map((a, index) => (
+                                <div key={a.id} className="p-6 hover:bg-[#fbfaf6] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                                    <div className="flex items-center gap-4">
+                                        {event.status === "DRAFT" && (
+                                            <div className="flex flex-col gap-1">
+                                                <button onClick={() => moveUp(index)} disabled={index === 0} className="p-1 text-[#737777] hover:text-[#171a1b] hover:bg-[#dedbd2] rounded transition-colors disabled:opacity-30">
+                                                    <ArrowUp size={16} />
+                                                </button>
+                                                <button onClick={() => moveDown(index)} disabled={index === assessments.length - 1} className="p-1 text-[#737777] hover:text-[#171a1b] hover:bg-[#dedbd2] rounded transition-colors disabled:opacity-30">
+                                                    <ArrowDown size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold bg-[#171a1b] text-white px-2 py-0.5 rounded">R{a.order}</span>
+                                                {a.roundName && <span className="text-sm font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{a.roundName}</span>}
+                                                <div className="font-bold text-[#171a1b] text-lg flex items-center gap-2">
+                                                    {a.title}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4 text-xs font-medium text-[#737777]">
+                                                <span className="flex items-center gap-1"><BookOpen size={14} /> {a.type}</span>
+                                                <span className="flex items-center gap-1"><Clock size={14} /> {a.duration} mins</span>
+                                                <span className="flex items-center gap-1 text-[#171a1b] font-bold px-2 py-0.5 bg-gray-100 rounded">{a.questionCount} Questions</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:items-end gap-3">
+                                        <div className="text-sm font-bold text-[#171a1b]">
+                                            {a.attemptCount} <span className="text-[#737777] font-medium">Attempts</span>
+                                        </div>
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Link href={`/assessments/${a.id}`} className="text-xs font-medium text-[#303433] bg-white border border-[#dedbd2] px-3 py-1.5 rounded hover:bg-[#fbfaf6]">
+                                                View
+                                            </Link>
+                                            {event.status === "DRAFT" && (
+                                                <>
+                                                    <button onClick={() => openEditRound(a.id, a.roundName)} className="text-xs font-medium text-[#303433] bg-white border border-[#dedbd2] px-3 py-1.5 rounded hover:bg-[#fbfaf6] flex items-center gap-1">
+                                                        <Settings size={12} /> Metadata
+                                                    </button>
+                                                    <button onClick={() => handleRemoveAssessment(a.id)} className="text-xs font-medium text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded hover:bg-red-100 flex items-center gap-1">
+                                                        <Trash size={12} /> Remove
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === "progression" && (
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-[#171a1b] flex items-center gap-2">
+                            <Users size={20} className="text-[#737777]" /> Candidate Progression
+                        </h2>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-[#dedbd2] shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-[#dedbd2] bg-[#fbfaf6]/50">
+                                        <th className="p-4 text-xs font-semibold text-[#737777] uppercase tracking-wider min-w-[200px]">Candidate</th>
+                                        {assessments.map(a => (
+                                            <th key={a.id} className="p-4 text-xs font-semibold text-[#737777] uppercase tracking-wider text-center">
+                                                R{a.order}: {a.roundName || 'Round'}
+                                            </th>
+                                        ))}
+                                        <th className="p-4 text-xs font-semibold text-[#737777] uppercase tracking-wider text-right">Total Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#dedbd2]">
+                                    {progression.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={assessments.length + 2} className="p-8 text-center text-[#737777]">
+                                                No candidates have participated in any rounds yet.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        progression.map(cand => (
+                                            <tr key={cand.candidate.id} className="hover:bg-[#fbfaf6] transition-colors">
+                                                <td className="p-4">
+                                                    <div className="font-bold text-[#171a1b] text-sm">{cand.candidate.name}</div>
+                                                    <div className="text-xs text-[#737777]">{cand.candidate.email}</div>
+                                                </td>
+                                                {assessments.map(a => {
+                                                    const roundData = cand.rounds.find(r => r.assessmentId === a.id);
+                                                    return (
+                                                        <td key={a.id} className="p-4 text-center">
+                                                            {roundData?.score !== undefined && roundData?.score !== null ? (
+                                                                <span className="inline-flex px-3 py-1 bg-gray-100 rounded text-sm font-bold text-[#171a1b]">
+                                                                    {roundData.score}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[#737777]">—</span>
+                                                            )}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="p-4 text-right">
+                                                    <span className="font-bold text-lg text-[#171a1b]">{cand.totalScore}</span>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Modal */}
             {isEditOpen && (
@@ -351,14 +554,43 @@ export default function EventDetailPage() {
                             <form id="attach-form" onSubmit={handleAttachAssessment} className="flex flex-col gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-[#171a1b] mb-1.5">Assessment ID *</label>
-                                    <input type="text" required value={attachId} onChange={(e) => setAttachId(e.target.value)} placeholder="Enter Assessment ID" className="w-full px-4 py-2 bg-[#fbfaf6] border border-[#dedbd2] rounded-lg text-sm focus:outline-none focus:border-emerald-500" disabled={attaching} />
+                                    <input type="text" required value={attachForm.assessmentId} onChange={(e) => setAttachForm({...attachForm, assessmentId: e.target.value})} placeholder="Enter Assessment ID" className="w-full px-4 py-2 bg-[#fbfaf6] border border-[#dedbd2] rounded-lg text-sm focus:outline-none focus:border-emerald-500" disabled={attaching} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-[#171a1b] mb-1.5">Round Name (Optional)</label>
+                                    <input type="text" value={attachForm.roundName} onChange={(e) => setAttachForm({...attachForm, roundName: e.target.value})} placeholder="e.g. Technical Round" className="w-full px-4 py-2 bg-[#fbfaf6] border border-[#dedbd2] rounded-lg text-sm focus:outline-none focus:border-emerald-500" disabled={attaching} />
                                 </div>
                             </form>
                         </div>
                         <div className="p-4 border-t border-[#dedbd2] bg-[#fbfaf6] flex justify-end gap-3">
                             <button type="button" onClick={() => setIsAttachOpen(false)} className="px-4 py-2 text-sm font-medium text-[#737777] hover:text-[#171a1b]" disabled={attaching}>Cancel</button>
-                            <button form="attach-form" type="submit" disabled={attaching || !attachId.trim()} className="bg-[#171a1b] hover:bg-[#303433] text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+                            <button form="attach-form" type="submit" disabled={attaching || !attachForm.assessmentId.trim()} className="bg-[#171a1b] hover:bg-[#303433] text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
                                 {attaching ? "Attaching..." : "Attach"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Round Modal */}
+            {isEditRoundOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-[#dedbd2]">
+                            <h3 className="text-lg font-bold text-[#171a1b]">Edit Round Metadata</h3>
+                        </div>
+                        <div className="p-6">
+                            <form id="edit-round-form" onSubmit={handleEditRoundSubmit} className="flex flex-col gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-[#171a1b] mb-1.5">Round Name</label>
+                                    <input type="text" value={editRoundForm.roundName} onChange={(e) => setEditRoundForm({...editRoundForm, roundName: e.target.value})} placeholder="e.g. Technical Round" className="w-full px-4 py-2 bg-[#fbfaf6] border border-[#dedbd2] rounded-lg text-sm focus:outline-none focus:border-emerald-500" disabled={savingRound} />
+                                </div>
+                            </form>
+                        </div>
+                        <div className="p-4 border-t border-[#dedbd2] bg-[#fbfaf6] flex justify-end gap-3">
+                            <button type="button" onClick={() => setIsEditRoundOpen(false)} className="px-4 py-2 text-sm font-medium text-[#737777] hover:text-[#171a1b]" disabled={savingRound}>Cancel</button>
+                            <button form="edit-round-form" type="submit" disabled={savingRound} className="bg-[#171a1b] hover:bg-[#303433] text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+                                {savingRound ? "Saving..." : "Save"}
                             </button>
                         </div>
                     </div>

@@ -32,6 +32,10 @@ export async function DELETE(
             return NextResponse.json({ error: "Event not found" }, { status: 404 });
         }
 
+        if (event.status !== "DRAFT") {
+            return NextResponse.json({ error: "Cannot remove assessments from a non-DRAFT event" }, { status: 400 });
+        }
+
         const existingLink = await prisma.eventAssessment.findUnique({
             where: {
                 eventId_assessmentId: {
@@ -57,6 +61,70 @@ export async function DELETE(
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Remove assessment error:", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
+export async function PATCH(
+    req: NextRequest,
+    props: { params: Promise<{ id: string; assessmentId: string }> }
+) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const organizerId = session.user.id;
+
+        const params = await props.params;
+        const { id: eventId, assessmentId } = params;
+        const body = await req.json();
+
+        const { roundName } = body;
+
+        if (roundName && typeof roundName !== "string") {
+            return NextResponse.json({ error: "roundName must be a string" }, { status: 400 });
+        }
+
+        const event = await prisma.event.findFirst({
+            where: { id: eventId, organizerId }
+        });
+        if (!event) {
+            return NextResponse.json({ error: "Event not found" }, { status: 404 });
+        }
+
+        if (event.status !== "DRAFT") {
+            return NextResponse.json({ error: "Cannot modify assessments in a non-DRAFT event" }, { status: 400 });
+        }
+
+        const existingLink = await prisma.eventAssessment.findUnique({
+            where: {
+                eventId_assessmentId: {
+                    eventId,
+                    assessmentId
+                }
+            }
+        });
+
+        if (!existingLink) {
+            return NextResponse.json({ error: "Attachment not found" }, { status: 404 });
+        }
+
+        const updated = await prisma.eventAssessment.update({
+            where: {
+                eventId_assessmentId: {
+                    eventId,
+                    assessmentId
+                }
+            },
+            data: {
+                roundName: roundName !== undefined ? roundName : existingLink.roundName
+            }
+        });
+
+        return NextResponse.json({ success: true, roundName: updated.roundName });
+    } catch (error) {
+        console.error("Update assessment metadata error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }

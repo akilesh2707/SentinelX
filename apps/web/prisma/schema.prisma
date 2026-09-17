@@ -251,6 +251,9 @@ model EventAssessment {
   eventId      String
   assessmentId String
 
+  order     Int     @default(1)
+  roundName String?
+
   event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
