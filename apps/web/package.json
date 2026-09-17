@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:prepare": "prisma db push --accept-data-loss",
     "postinstall": "prisma skills sync || exit 0"
   },
   "dependencies": {
@@ -32,11 +34,13 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/expect": "^5.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.1"
   },
   "packageManager": "pnpm@10.15.0"
 }
