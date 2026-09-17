@@ -35,6 +35,10 @@ export default async function ExamPage(props: ExamPageProps) {
                     totalMarks: true,
                     primaryCamera: true,
                     audioMonitoring: true,
+                    browserLock: true,
+                    tabDetection: true,
+                    autoSubmit: true,
+                    aiProctoring: true,
                 },
             },
             // Just counting the questions for UI context, not returning the actual content
