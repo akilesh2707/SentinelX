@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
         // 3. Candidate & Attempt Limit Validation inside Transaction
         // We use a transaction to ensure attempt is not partially created
         const result = await prisma.$transaction(async (tx) => {
-            // Find or create Candidate (email is not @unique in schema)
+            // Find or create Candidate (scoped by organizerId)
             let candidate = await tx.candidate.findFirst({
-                where: { email }
+                where: { email, organizerId: assessment.organizerId }
             });
 
             if (candidate) {
@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
             } else {
                 candidate = await tx.candidate.create({
                     data: {
+                        organizerId: assessment.organizerId,
                         email,
                         name,
                     }

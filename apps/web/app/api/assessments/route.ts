@@ -100,7 +100,10 @@ export async function POST(request: Request) {
 
         // Fetch questions to derive truth
         const dbQuestions = await prisma.question.findMany({
-            where: { id: { in: Array.from(uniqueQuestionIds) as string[] } },
+            where: { 
+                id: { in: Array.from(uniqueQuestionIds) as string[] },
+                organizerId: session.user.id
+            },
         });
 
         if (dbQuestions.length !== uniqueQuestionIds.size) {

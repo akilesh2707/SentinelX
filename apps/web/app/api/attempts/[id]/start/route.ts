@@ -77,7 +77,12 @@ export async function POST(
 
         // 5. Calculate timing
         const durationMs = attempt.assessment.duration * 60000;
-        const expiresAt = new Date(now.getTime() + durationMs);
+        const baseExpiresAt = new Date(now.getTime() + durationMs);
+        
+        let expiresAt = baseExpiresAt;
+        if (endDate && baseExpiresAt > endDate) {
+            expiresAt = endDate;
+        }
 
         // 6. Atomic Update
         // Use updateMany to safely constrain on status: "NOT_STARTED" to prevent concurrent double-starts

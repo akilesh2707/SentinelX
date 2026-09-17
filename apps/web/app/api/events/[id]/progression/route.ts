@@ -39,6 +39,7 @@ export async function GET(
         // Get candidates who have attempts in these assessments
         const candidates = await prisma.candidate.findMany({
             where: {
+                organizerId,
                 attempts: {
                     some: {
                         assessmentId: { in: assessmentIds }
@@ -87,7 +88,7 @@ export async function GET(
                     }
                 }
 
-                if (selectedAttempt && selectedAttempt.score !== null) {
+                if (selectedAttempt && selectedAttempt.status === "SUBMITTED" && selectedAttempt.score !== null) {
                     totalScore += selectedAttempt.score;
                 }
 

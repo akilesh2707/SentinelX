@@ -31,12 +31,13 @@ describe('Runtime Enforcement Integration Tests', () => {
 
     beforeAll(async () => {
         organizer = await createOrganizer();
-        candidate = await createCandidate();
+        candidate = await createCandidate(organizer.id);
     });
 
     afterAll(async () => {
         await prisma.assessmentAttempt.deleteMany();
         await prisma.assessment.deleteMany();
+        await prisma.question.deleteMany();
         await prisma.organizer.deleteMany();
         await prisma.candidate.deleteMany();
     });

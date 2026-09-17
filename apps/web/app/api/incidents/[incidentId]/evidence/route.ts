@@ -41,7 +41,6 @@ export async function GET(
                 id: true,
                 incidentId: true,
                 type: true,
-                storageKey: true,
                 mimeType: true,
                 sizeBytes: true,
                 capturedAt: true,

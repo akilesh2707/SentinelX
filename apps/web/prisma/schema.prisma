@@ -144,16 +144,21 @@ enum AttemptStatus {
 }
 
 model Candidate {
-  id    String  @id @default(cuid())
+  id          String  @id @default(cuid())
+  organizerId String
+
   name  String
   email String
   phone String?
+
+  organizer Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
 
   attempts AssessmentAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([organizerId, email])
   @@index([email])
 }
 
@@ -279,6 +284,7 @@ model Organizer {
   assessments Assessment[]
   events      Event[]
   questions   Question[]
+  candidates  Candidate[]
 }
 
 enum ProctoringEventType {

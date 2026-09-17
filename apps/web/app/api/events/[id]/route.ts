@@ -109,6 +109,10 @@ export async function PATCH(
             return NextResponse.json({ error: "Event not found" }, { status: 404 });
         }
 
+        if (existingEvent.status === "CLOSED") {
+            return NextResponse.json({ error: "Cannot modify a CLOSED event" }, { status: 409 });
+        }
+
         const updateData: any = {};
 
         if (title !== undefined) {

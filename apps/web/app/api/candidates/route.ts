@@ -37,14 +37,8 @@ export async function GET(req: NextRequest) {
 
         const skip = (page - 1) * pageSize;
 
-        // Base where: Candidate must have at least one attempt for an assessment owned by this organizer
-        const where: any = {
-            attempts: {
-                some: {
-                    assessment: { organizerId }
-                }
-            }
-        };
+        // Base where: Candidate belongs directly to this organizer
+        const where: any = { organizerId };
 
         if (search) {
             where.OR = [
@@ -64,8 +58,8 @@ export async function GET(req: NextRequest) {
             }
             attemptFilters.status = status;
             
-            // If filtering by status, the candidate MUST have an attempt matching this status for this organizer
-            where.attempts.some.status = status;
+            // If filtering by status, the candidate MUST have an attempt matching this status
+            where.attempts = { some: { status } };
         }
 
         const [totalRecords, candidates] = await Promise.all([

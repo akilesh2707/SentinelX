@@ -23,7 +23,7 @@ describe('Events Integration Tests', () => {
     beforeAll(async () => {
         orgA = await createOrganizer();
         orgB = await createOrganizer();
-        cand = await createCandidate();
+        cand = await createCandidate(orgA.id);
 
         cookieA = await createOrganizerSession(orgA.id, orgA.email);
         cookieB = await createOrganizerSession(orgB.id, orgB.email);
@@ -39,6 +39,7 @@ describe('Events Integration Tests', () => {
         await prisma.event.deleteMany();
         await prisma.assessmentAttempt.deleteMany();
         await prisma.assessment.deleteMany();
+        await prisma.question.deleteMany();
         await prisma.organizer.deleteMany();
         await prisma.candidate.deleteMany();
     });

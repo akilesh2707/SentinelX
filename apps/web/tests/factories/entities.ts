@@ -13,10 +13,11 @@ export async function createOrganizer(overrides = {}) {
     });
 }
 
-export async function createCandidate(overrides = {}) {
+export async function createCandidate(organizerId: string, overrides = {}) {
     const id = randomBytes(4).toString('hex');
     return prisma.candidate.create({
         data: {
+            organizerId,
             name: `Test Cand ${id}`,
             email: `cand-${id}@test.com`,
             ...overrides

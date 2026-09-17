@@ -16,11 +16,11 @@ export async function GET(
         const params = await props.params;
         const candidateId = params.id;
 
-        // Verify authorization: The candidate must have at least one attempt for this organizer
-        const hasAuthorization = await prisma.assessmentAttempt.findFirst({
+        // Verify authorization: The candidate must belong to this organizer
+        const hasAuthorization = await prisma.candidate.findUnique({
             where: {
-                candidateId,
-                assessment: { organizerId }
+                id: candidateId,
+                organizerId
             }
         });
 
