@@ -131,6 +131,8 @@ export default function CreateAssessmentPage() {
     const [randomizeQuestions, setRandomizeQuestions] = useState(true);
     const [negativeMarking, setNegativeMarking] = useState(false);
 
+    const [publishSuccessData, setPublishSuccessData] = useState<{ accessCode: string; joinLink: string } | null>(null);
+
     const handlePublish = async () => {
         if (selectedQuestions.length === 0) {
             alert("Please select at least one question from the Question Bank.");
@@ -186,18 +188,66 @@ export default function CreateAssessmentPage() {
                 throw new Error(data.error || "Failed to publish assessment");
             }
 
-            alert(
-                `Assessment published successfully!\n\nAccess Code: ${data.assessment.accessCode}`
-            );
-            setAccessCode(data.assessment.accessCode);
-            setJoinLink(data.assessment.joinLink);
-            router.push("/assessments");
+            setPublishSuccessData({
+                accessCode: data.assessment.accessCode,
+                joinLink: data.assessment.joinLink,
+            });
             console.log("Published assessment:", data.assessment);
         } catch (error) {
             console.error("Publish error:", error);
             alert("Failed to publish assessment.");
         }
     };
+
+    if (publishSuccessData) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#f5f2eb] text-[#171a1a]">
+                <div className="rounded-2xl border border-black/10 bg-[#faf8f3] p-12 text-center max-w-xl w-full mx-4 shadow-xl">
+                    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-8 shadow-sm">
+                        <Check size={48} />
+                    </div>
+                    
+                    <h1 className="text-4xl font-bold tracking-tight mb-4 text-[#171a1b]">Assessment Published!</h1>
+                    
+                    <p className="text-black/60 mb-10 max-w-sm mx-auto text-sm leading-relaxed">
+                        Your assessment is now live and ready for candidates. Share the details below.
+                    </p>
+                    
+                    <div className="bg-white border border-black/10 rounded-xl p-6 text-left mb-8 shadow-sm">
+                        <div className="mb-6">
+                            <label className="block text-[11px] font-bold uppercase tracking-wider text-black/45 mb-2">Access Code</label>
+                            <div className="text-2xl font-mono font-bold tracking-widest text-[#f15b1f] bg-[#fff7f1] p-4 rounded-lg text-center border border-[#f15b1f]/20">
+                                {publishSuccessData.accessCode}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-[11px] font-bold uppercase tracking-wider text-black/45 mb-2">Join Link</label>
+                            <div className="flex bg-black/[0.02] border border-black/5 rounded-lg overflow-hidden">
+                                <div className="px-4 py-3 text-sm font-medium text-black/70 truncate flex-1 font-mono">
+                                    {window.location.origin}{publishSuccessData.joinLink}
+                                </div>
+                                <button 
+                                    className="px-4 bg-[#171a1b] text-white text-sm font-semibold hover:bg-black transition-colors"
+                                    onClick={() => navigator.clipboard.writeText(`${window.location.origin}${publishSuccessData.joinLink}`)}
+                                >
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button
+                        onClick={() => router.push("/assessments")}
+                        className="w-full rounded-xl bg-[#f15b1f] px-6 py-4 text-sm font-bold text-white transition hover:bg-[#d94f18] shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                    >
+                        Go to Assessment Registry
+                        <ArrowRight size={18} />
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#f5f2eb] text-[#171a1a]">
@@ -1471,7 +1521,7 @@ function SecurityToggle({
                     <div className="text-sm font-semibold flex items-center gap-2">
                         {title}
                         {!implemented && (
-                            <span className="rounded-full bg-black/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black/60">
+                            <span className="rounded bg-[#fbfaf6] border border-[#dedbd2] shadow-sm px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wider text-[#737777]">
                                 Coming Soon
                             </span>
                         )}

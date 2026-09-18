@@ -59,8 +59,8 @@ export default function SignupPage() {
                     <div className="flex justify-center text-emerald-500 mb-2">
                         <CheckCircle2 size={48} />
                     </div>
-                    <h2 className="text-xl font-bold text-text-primary">Registration Successful</h2>
-                    <p className="text-sm text-text-secondary">Your organizer account has been created. Redirecting to login...</p>
+                    <h2 className="text-xl font-bold text-carbon">Registration Successful</h2>
+                    <p className="text-sm text-carbon/70">Your organizer account has been created. Redirecting to login...</p>
                 </div>
             </div>
         );
@@ -74,8 +74,8 @@ export default function SignupPage() {
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-signal text-carbon mb-4">
                         <ShieldAlert size={24} strokeWidth={2.5} />
                     </div>
-                    <h1 className="text-2xl font-bold text-text-primary">Create Account</h1>
-                    <p className="text-sm text-text-secondary mt-1">Register for SentinelX Organizer Access</p>
+                    <h1 className="text-2xl font-bold text-carbon">Create Account</h1>
+                    <p className="text-sm text-carbon/70 mt-1">Register for SentinelX Organizer Access</p>
                 </div>
 
                 {error && (
@@ -87,47 +87,47 @@ export default function SignupPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1.5">Full Name</label>
+                        <label className="block text-xs font-bold text-carbon/70 uppercase tracking-wider mb-1.5">Full Name</label>
                         <input
                             name="name"
                             type="text"
                             required
-                            className="w-full px-4 py-2.5 bg-paper-soft border border-border-light rounded-lg text-sm text-text-primary focus:outline-none focus:border-carbon transition-colors"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-carbon focus:outline-none focus:border-carbon transition-colors"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1.5">Email Address</label>
+                        <label className="block text-xs font-bold text-carbon/70 uppercase tracking-wider mb-1.5">Email Address</label>
                         <input
                             name="email"
                             type="email"
                             required
                             autoComplete="email"
-                            className="w-full px-4 py-2.5 bg-paper-soft border border-border-light rounded-lg text-sm text-text-primary focus:outline-none focus:border-carbon transition-colors"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-carbon focus:outline-none focus:border-carbon transition-colors"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1.5">Password</label>
+                        <label className="block text-xs font-bold text-carbon/70 uppercase tracking-wider mb-1.5">Password</label>
                         <input
                             name="password"
                             type="password"
                             required
                             minLength={8}
                             autoComplete="new-password"
-                            className="w-full px-4 py-2.5 bg-paper-soft border border-border-light rounded-lg text-sm text-text-primary focus:outline-none focus:border-carbon transition-colors"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-carbon focus:outline-none focus:border-carbon transition-colors"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1.5">Confirm Password</label>
+                        <label className="block text-xs font-bold text-carbon/70 uppercase tracking-wider mb-1.5">Confirm Password</label>
                         <input
                             name="confirmPassword"
                             type="password"
                             required
                             minLength={8}
                             autoComplete="new-password"
-                            className="w-full px-4 py-2.5 bg-paper-soft border border-border-light rounded-lg text-sm text-text-primary focus:outline-none focus:border-carbon transition-colors"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-carbon focus:outline-none focus:border-carbon transition-colors"
                         />
                     </div>
 
@@ -140,7 +140,7 @@ export default function SignupPage() {
                     </button>
                 </form>
 
-                <div className="mt-8 text-center text-sm text-text-secondary">
+                <div className="mt-8 text-center text-sm text-carbon/70">
                     Already have an account? <Link href="/login" className="text-carbon font-semibold hover:underline">Sign in here</Link>
                 </div>
             </div>

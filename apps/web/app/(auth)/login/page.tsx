@@ -48,8 +48,8 @@ export default function LoginPage() {
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-signal text-carbon mb-4">
                         <ShieldAlert size={24} strokeWidth={2.5} />
                     </div>
-                    <h1 className="text-2xl font-bold text-text-primary">Organizer Login</h1>
-                    <p className="text-sm text-text-secondary mt-1">Sign in to SentinelX Vigilance System</p>
+                    <h1 className="text-2xl font-bold text-carbon">Organizer Login</h1>
+                    <p className="text-sm text-carbon/70 mt-1">Sign in to SentinelX Vigilance System</p>
                 </div>
 
                 {error && (
@@ -61,24 +61,24 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1.5">Email Address</label>
+                        <label className="block text-xs font-bold text-carbon/70 uppercase tracking-wider mb-1.5">Email Address</label>
                         <input
                             name="email"
                             type="email"
                             required
                             autoComplete="email"
-                            className="w-full px-4 py-2.5 bg-paper-soft border border-border-light rounded-lg text-sm text-text-primary focus:outline-none focus:border-carbon transition-colors"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-carbon focus:outline-none focus:border-carbon transition-colors"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-1.5">Password</label>
+                        <label className="block text-xs font-bold text-carbon/70 uppercase tracking-wider mb-1.5">Password</label>
                         <input
                             name="password"
                             type="password"
                             required
                             autoComplete="current-password"
-                            className="w-full px-4 py-2.5 bg-paper-soft border border-border-light rounded-lg text-sm text-text-primary focus:outline-none focus:border-carbon transition-colors"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-carbon focus:outline-none focus:border-carbon transition-colors"
                         />
                     </div>
 
@@ -91,7 +91,7 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                <div className="mt-8 text-center text-sm text-text-secondary">
+                <div className="mt-8 text-center text-sm text-carbon/70">
                     Don't have an account? <Link href="/signup" className="text-carbon font-semibold hover:underline">Register here</Link>
                 </div>
             </div>

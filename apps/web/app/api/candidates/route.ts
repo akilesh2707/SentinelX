@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
             if (!validStatuses.includes(status)) {
                 return NextResponse.json({ error: "Invalid status parameter" }, { status: 400 });
             }
-            attemptFilters.status = status;
             
             // If filtering by status, the candidate MUST have an attempt matching this status
             where.attempts = { some: { status } };
@@ -97,7 +96,11 @@ export async function GET(req: NextRequest) {
             const attemptsCount = c.attempts.length;
             const submittedCount = c.attempts.filter(a => a.status === "SUBMITTED").length;
 
-            const latestAttempt = c.attempts.length > 0 ? c.attempts[0] : null;
+            const relevantAttempts = status 
+                ? c.attempts.filter(a => a.status === status)
+                : c.attempts;
+
+            const latestAttempt = relevantAttempts.length > 0 ? relevantAttempts[0] : null;
 
             return {
                 id: c.id,

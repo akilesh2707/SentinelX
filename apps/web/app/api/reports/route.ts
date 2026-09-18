@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
         let inProgressAttempts = 0;
         let expiredAttempts = 0;
         let abandonedAttempts = 0;
+        let notStartedAttempts = 0;
 
         let eligibleScoreSum = 0;
         let eligibleScoreCount = 0;
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
             else if (attempt.status === "IN_PROGRESS") inProgressAttempts++;
             else if (attempt.status === "EXPIRED") expiredAttempts++;
             else if (attempt.status === "ABANDONED") abandonedAttempts++;
+            else if (attempt.status === "NOT_STARTED") notStartedAttempts++;
 
             // Assessment Breakdown mapping
             if (!assessmentBreakdownMap[attempt.assessmentId]) {
@@ -126,6 +128,7 @@ export async function GET(req: NextRequest) {
             success: true,
             overall: {
                 totalAttempts,
+                notStartedAttempts,
                 submittedAttempts,
                 inProgressAttempts,
                 expiredAttempts,

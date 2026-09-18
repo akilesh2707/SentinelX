@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 
-export function JoinPage() {
+export function JoinPage({ initialAccessCode = "" }: { initialAccessCode?: string }) {
     const router = useRouter();
 
-    const [accessCode, setAccessCode] = useState("");
+    const [accessCode, setAccessCode] = useState(initialAccessCode);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
 

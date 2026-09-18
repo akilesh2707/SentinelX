@@ -30,7 +30,7 @@ export default function SettingsPage() {
                             <Building2 className="text-[#303433]" size={18} />
                             <h2 className="text-lg font-bold text-[#171a1b]">Organization</h2>
                         </div>
-                        <span className="bg-[#dedbd2]/50 text-[#737777] px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Coming Soon</span>
+                        <span className="bg-[#fbfaf6] text-[#737777] border border-[#dedbd2] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">Coming Soon</span>
                     </div>
                     <div className="p-6 space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -62,7 +62,7 @@ export default function SettingsPage() {
                             <Sliders className="text-[#303433]" size={18} />
                             <h2 className="text-lg font-bold text-[#171a1b]">Assessment Defaults</h2>
                         </div>
-                        <span className="bg-[#dedbd2]/50 text-[#737777] px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Coming Soon</span>
+                        <span className="bg-[#fbfaf6] text-[#737777] border border-[#dedbd2] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">Coming Soon</span>
                     </div>
                     <div className="p-6 space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -101,7 +101,7 @@ export default function SettingsPage() {
                             <Lock className="text-[#a0a19b]" size={18} />
                             <h2 className="text-lg font-bold">Security Preferences</h2>
                         </div>
-                        <span className="bg-[#303433] text-[#a0a19b] px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Coming Soon</span>
+                        <span className="bg-[#171a1b] text-[#a0a19b] border border-[#303433] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">Coming Soon</span>
                     </div>
                     <div className="p-6 space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
@@ -121,7 +121,7 @@ export default function SettingsPage() {
                             <Bell className="text-[#303433]" size={18} />
                             <h2 className="text-lg font-bold text-[#171a1b]">System Preferences</h2>
                         </div>
-                        <span className="bg-[#dedbd2]/50 text-[#737777] px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Coming Soon</span>
+                        <span className="bg-[#fbfaf6] text-[#737777] border border-[#dedbd2] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">Coming Soon</span>
                     </div>
                     <div className="p-6 space-y-6">
                         <div className="grid grid-cols-1 gap-6">

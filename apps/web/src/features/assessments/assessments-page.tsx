@@ -203,7 +203,7 @@ export function AssessmentsPage() {
                     </div>
 
                     <button
-                        onClick={() => router.push("/assessments/create")}
+                        onClick={() => router.push("/assessments/new")}
                         className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-orange-700 hover:shadow-md"
                     >
                         <Plus size={16} />
@@ -456,7 +456,10 @@ export function AssessmentsPage() {
                                             </button>
 
                                             {displayStatus === "Published" && (
-                                                <button className="rounded-lg bg-[#202424] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-orange-600">
+                                                <button 
+                                                    onClick={() => router.push(`/proctoring?assessmentId=${assessment.id}`)}
+                                                    className="rounded-lg bg-[#202424] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-orange-600"
+                                                >
                                                     Monitor
                                                 </button>
                                             )}

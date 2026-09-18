@@ -19,7 +19,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
 
     // MCQ specific
     const [options, setOptions] = useState([
-        { optionKey: "A", text: "", isCorrect: true, order: 1 },
+        { optionKey: "A", text: "", isCorrect: false, order: 1 },
         { optionKey: "B", text: "", isCorrect: false, order: 2 },
         { optionKey: "C", text: "", isCorrect: false, order: 3 },
         { optionKey: "D", text: "", isCorrect: false, order: 4 },
@@ -63,6 +63,11 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
             };
 
             if (type === "MCQ") {
+                if (!options.some(o => o.isCorrect)) {
+                    setError("Please explicitly select a correct answer.");
+                    setLoading(false);
+                    return;
+                }
                 payload.options = options;
             } else {
                 payload.starterCode = starterCode;
@@ -105,7 +110,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
         setDefaultMarks(1);
         setExplanation("");
         setOptions([
-            { optionKey: "A", text: "", isCorrect: true, order: 1 },
+            { optionKey: "A", text: "", isCorrect: false, order: 1 },
             { optionKey: "B", text: "", isCorrect: false, order: 2 },
             { optionKey: "C", text: "", isCorrect: false, order: 3 },
             { optionKey: "D", text: "", isCorrect: false, order: 4 },
@@ -172,11 +177,11 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                     onClick={() => setType(t)}
                                     className={`flex-1 rounded-xl border p-4 text-center transition ${
                                         type === t
-                                            ? "border-orange-500 bg-orange-50 text-orange-700"
-                                            : "border-[#d8d5cd] bg-white text-[#565a56] hover:bg-[#f6f4ef]"
+                                            ? "border-orange-500 bg-orange-50 text-[#171a1a]"
+                                            : "border-[#d8d5cd] bg-white text-[#171a1a] hover:bg-[#f6f4ef]"
                                     }`}
                                 >
-                                    <p className="font-semibold">{t === "MCQ" ? "Multiple Choice" : "Coding Task"}</p>
+                                    <p className="font-semibold text-inherit">{t === "MCQ" ? "Multiple Choice" : "Coding Task"}</p>
                                 </button>
                             ))}
                         </div>
@@ -186,34 +191,34 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                             <h3 className="font-semibold text-[#202424]">Basic Details</h3>
 
                             <div>
-                                <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Title</label>
+                                <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Title</label>
                                 <input
                                     required
                                     type="text"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                    className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                     placeholder="Question title"
                                 />
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                 <div>
-                                    <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Topic</label>
+                                    <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Topic</label>
                                     <input
                                         type="text"
                                         value={topic}
                                         onChange={(e) => setTopic(e.target.value)}
-                                        className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                        className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                         placeholder="e.g. Arrays, React"
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Difficulty</label>
+                                    <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Difficulty</label>
                                     <select
                                         value={difficulty}
                                         onChange={(e) => setDifficulty(e.target.value)}
-                                        className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                        className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                     >
                                         <option value="Easy">Easy</option>
                                         <option value="Medium">Medium</option>
@@ -221,36 +226,36 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Default Marks</label>
+                                    <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Default Marks</label>
                                     <input
                                         required
                                         type="number"
                                         min="1"
                                         value={defaultMarks}
                                         onChange={(e) => setDefaultMarks(Number(e.target.value))}
-                                        className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                        className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Description</label>
+                                <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Description</label>
                                 <textarea
                                     rows={3}
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                    className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                     placeholder="Detailed question description..."
                                 />
                             </div>
 
                             <div>
-                                <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Explanation (Optional)</label>
+                                <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Explanation (Optional)</label>
                                 <textarea
                                     rows={2}
                                     value={explanation}
                                     onChange={(e) => setExplanation(e.target.value)}
-                                    className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                    className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                     placeholder="Explanation for the correct answer"
                                 />
                             </div>
@@ -262,8 +267,8 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                 <h3 className="font-semibold text-[#202424]">Options</h3>
                                 <div className="space-y-3">
                                     {options.map((opt, idx) => (
-                                        <div key={idx} className={`flex items-center gap-3 rounded-lg border p-3 ${opt.isCorrect ? "border-emerald-400 bg-emerald-50" : "border-[#d8d5cd] bg-white"}`}>
-                                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#e9e6df] text-xs font-bold text-[#656863]">
+                                        <div key={idx} className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${opt.isCorrect ? "border-orange-500 bg-orange-50 text-[#171a1a]" : "border-[#dcd9d1] bg-[#fbfaf6] text-[#171a1a]"}`}>
+                                            <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold transition-colors ${opt.isCorrect ? "bg-orange-200 text-orange-900" : "bg-[#e4e1d8] text-[#171a1a]/70"}`}>
                                                 {opt.optionKey}
                                             </div>
                                             <input
@@ -276,9 +281,9 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                                     setOptions(newOpts);
                                                 }}
                                                 placeholder={`Option ${opt.optionKey}`}
-                                                className="flex-1 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-sm text-[#303433] placeholder:text-[#a0a19b] outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100"
+                                                className={`flex-1 rounded-md border border-transparent px-3 py-1.5 text-sm outline-none transition-colors bg-transparent text-[#171a1a] placeholder:text-[#171a1a]/50 focus:bg-white focus:border-orange-400 focus:ring-2 focus:ring-orange-100`}
                                             />
-                                            <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs font-medium text-[#565a56]">
+                                            <label className={`flex shrink-0 cursor-pointer items-center gap-2 text-xs font-medium transition-colors ${opt.isCorrect ? "text-[#171a1a]" : "text-[#171a1a]/80"}`}>
                                                 <input
                                                     type="radio"
                                                     name="correctOption"
@@ -308,42 +313,42 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
 
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Input Format</label>
+                                            <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Input Format</label>
                                             <textarea
                                                 rows={2}
                                                 value={inputFormat}
                                                 onChange={(e) => setInputFormat(e.target.value)}
-                                                className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                                className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Output Format</label>
+                                            <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Output Format</label>
                                             <textarea
                                                 rows={2}
                                                 value={outputFormat}
                                                 onChange={(e) => setOutputFormat(e.target.value)}
-                                                className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                                className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                             />
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Constraints</label>
+                                        <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Constraints</label>
                                         <textarea
                                             rows={2}
                                             value={constraints}
                                             onChange={(e) => setConstraints(e.target.value)}
-                                            className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                            className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="mb-1.5 block text-xs font-medium text-[#565a56]">Starter Code (Optional)</label>
+                                        <label className="mb-1.5 block text-xs font-medium text-[#171a1a]/80">Starter Code (Optional)</label>
                                         <textarea
                                             rows={4}
                                             value={starterCode}
                                             onChange={(e) => setStarterCode(e.target.value)}
-                                            className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 font-mono text-sm text-[#303433] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                                            className="w-full rounded-lg border border-[#dcd9d1] bg-[#fbfaf6] px-3 py-2 font-mono text-sm text-[#171a1a] placeholder:text-[#171a1a]/50 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                                             placeholder="def solution():\n    pass"
                                         />
                                     </div>
@@ -360,7 +365,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                                     { input: "", expectedOutput: "", isHidden: true, marks: 1, order: testCases.length + 1 },
                                                 ]);
                                             }}
-                                            className="flex items-center gap-1.5 rounded-lg border border-[#d8d5cd] bg-[#fbfaf6] px-3 py-1.5 text-xs font-semibold text-[#565a56] transition hover:bg-[#f0ede5]"
+                                            className="flex items-center gap-1.5 rounded-lg border border-[#d8d5cd] bg-[#fbfaf6] px-3 py-1.5 text-xs font-semibold text-[#171a1a]/80 transition hover:bg-[#f0ede5]"
                                         >
                                             <Plus size={14} /> Add Test Case
                                         </button>
@@ -381,7 +386,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                                 </button>
 
                                                 <div className="mb-3 flex items-center gap-4 text-sm">
-                                                    <span className="font-semibold text-[#565a56]">Test Case {idx + 1}</span>
+                                                    <span className="font-semibold text-[#171a1a]/80">Test Case {idx + 1}</span>
                                                     <label className="flex items-center gap-1.5">
                                                         <input
                                                             type="checkbox"
@@ -396,7 +401,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                                         Hidden
                                                     </label>
                                                     <div className="flex items-center gap-2">
-                                                        <label className="text-[#565a56]">Marks:</label>
+                                                        <label className="text-[#171a1a]/80">Marks:</label>
                                                         <input
                                                             required
                                                             type="number"
@@ -414,7 +419,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
 
                                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div>
-                                                        <label className="mb-1 block text-xs font-medium text-[#737777]">Input</label>
+                                                        <label className="mb-1 block text-xs font-medium text-[#171a1a]/70">Input</label>
                                                         <textarea
                                                             required
                                                             rows={2}
@@ -428,7 +433,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="mb-1 block text-xs font-medium text-[#737777]">Expected Output</label>
+                                                        <label className="mb-1 block text-xs font-medium text-[#171a1a]/70">Expected Output</label>
                                                         <textarea
                                                             required
                                                             rows={2}
@@ -457,7 +462,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="rounded-lg px-4 py-2 text-sm font-medium text-[#565a56] hover:bg-[#e4e1d8]"
+                            className="rounded-lg px-4 py-2 text-sm font-medium text-[#171a1a]/80 hover:bg-[#e4e1d8]"
                             disabled={loading}
                         >
                             Cancel

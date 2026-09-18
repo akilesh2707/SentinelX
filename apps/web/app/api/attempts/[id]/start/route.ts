@@ -21,6 +21,7 @@ export async function POST(
             include: {
                 assessment: {
                     select: { 
+                        status: true,
                         duration: true,
                         startDate: true,
                         endDate: true,
@@ -57,6 +58,10 @@ export async function POST(
         // 3. Reject invalid states
         if (attempt.status !== "NOT_STARTED") {
             return NextResponse.json({ error: `Cannot start an attempt in ${attempt.status} state` }, { status: 403 });
+        }
+
+        if (attempt.assessment.status !== "PUBLISHED") {
+            return NextResponse.json({ error: "Assessment is no longer available" }, { status: 403 });
         }
 
         // 4. Validate Assessment Window and Late Join

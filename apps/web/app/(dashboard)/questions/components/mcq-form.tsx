@@ -16,7 +16,7 @@ type McqFormProps = {
 };
 
 const DEFAULT_OPTIONS: McqOption[] = [
-    { optionKey: "A", text: "", isCorrect: true, order: 1 },
+    { optionKey: "A", text: "", isCorrect: false, order: 1 },
     { optionKey: "B", text: "", isCorrect: false, order: 2 },
     { optionKey: "C", text: "", isCorrect: false, order: 3 },
     { optionKey: "D", text: "", isCorrect: false, order: 4 },
@@ -49,8 +49,8 @@ export function McqForm({ data, onChange }: McqFormProps) {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-lg font-medium text-text-primary mb-1">Multiple Choice Options</h3>
-                <p className="text-sm text-text-secondary">Provide exactly 4 options and select the correct answer.</p>
+                <h3 className="text-lg font-medium text-carbon mb-1">Multiple Choice Options</h3>
+                <p className="text-sm text-carbon/70">Provide exactly 4 options and select the correct answer.</p>
             </div>
 
             <div className="grid gap-4">
@@ -60,14 +60,14 @@ export function McqForm({ data, onChange }: McqFormProps) {
                         className={`flex items-start gap-4 p-4 rounded-xl border transition-colors ${
                             opt.isCorrect
                                 ? "bg-signal/5 border-signal"
-                                : "bg-graphite border-border"
+                                : "bg-white border-border"
                         }`}
                     >
                         <button
                             type="button"
                             onClick={() => handleSetCorrect(index)}
                             className={`mt-2 flex-shrink-0 transition-colors ${
-                                opt.isCorrect ? "text-signal" : "text-text-secondary hover:text-text-primary"
+                                opt.isCorrect ? "text-signal" : "text-carbon/40 hover:text-carbon"
                             }`}
                             title="Mark as correct"
                         >
@@ -79,7 +79,7 @@ export function McqForm({ data, onChange }: McqFormProps) {
                         </button>
 
                         <div className="flex-1 space-y-2">
-                            <label className="text-sm font-medium text-text-secondary flex items-center gap-2">
+                            <label className="text-sm font-medium text-carbon/80 flex items-center gap-2">
                                 Option {opt.optionKey}
                                 {opt.isCorrect && <span className="text-signal text-xs">(Correct Answer)</span>}
                             </label>
@@ -88,7 +88,7 @@ export function McqForm({ data, onChange }: McqFormProps) {
                                 value={opt.text}
                                 onChange={(e) => handleOptionTextChange(index, e.target.value)}
                                 placeholder={`Enter text for option ${opt.optionKey}`}
-                                className={`w-full border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none transition-colors ${
+                                className={`w-full border rounded-lg px-4 py-2.5 text-carbon placeholder:text-carbon/50 focus:outline-none transition-colors ${
                                     opt.isCorrect 
                                         ? "bg-paper border-signal/30 focus:border-signal" 
                                         : "bg-paper border-border focus:border-text-secondary"

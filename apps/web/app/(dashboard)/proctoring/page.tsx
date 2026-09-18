@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Search, Filter, ChevronRight, BookOpen, CheckCircle2, XCircle, ChevronLeft, ShieldAlert } from "lucide-react";
 
 type ProctoringAttempt = {
@@ -14,7 +15,9 @@ type ProctoringAttempt = {
     submittedAt: string | null;
 };
 
-export default function ProctoringDashboard() {
+function ProctoringDashboardContent() {
+    const searchParams = useSearchParams();
+    
     const [attempts, setAttempts] = useState<ProctoringAttempt[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -22,7 +25,7 @@ export default function ProctoringDashboard() {
     
     // Assessment Filter
     const [assessments, setAssessments] = useState<{id: string; title: string}[]>([]);
-    const [selectedAssessmentId, setSelectedAssessmentId] = useState("");
+    const [selectedAssessmentId, setSelectedAssessmentId] = useState(searchParams.get("assessmentId") || "");
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -272,5 +275,13 @@ export default function ProctoringDashboard() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function ProctoringDashboard() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center">Loading proctoring dashboard...</div>}>
+            <ProctoringDashboardContent />
+        </Suspense>
     );
 }

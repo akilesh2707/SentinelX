@@ -721,28 +721,31 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
 
                             {/* Coding rendering */}
                             {currentQuestion.question.type === "CODING" && (
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {currentQuestion.question.inputFormat && (
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                                    <div className="lg:col-span-5 space-y-6">
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {currentQuestion.question.inputFormat && (
+                                                <div className="bg-white p-4 rounded-lg border border-[#dedbd2]">
+                                                    <h3 className="text-xs font-bold text-[#737777] uppercase mb-2">Input Format</h3>
+                                                    <p className="text-sm font-mono text-[#171a1b]">{currentQuestion.question.inputFormat}</p>
+                                                </div>
+                                            )}
+                                            {currentQuestion.question.outputFormat && (
+                                                <div className="bg-white p-4 rounded-lg border border-[#dedbd2]">
+                                                    <h3 className="text-xs font-bold text-[#737777] uppercase mb-2">Output Format</h3>
+                                                    <p className="text-sm font-mono text-[#171a1b]">{currentQuestion.question.outputFormat}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {currentQuestion.question.constraints && (
                                             <div className="bg-white p-4 rounded-lg border border-[#dedbd2]">
-                                                <h3 className="text-xs font-bold text-[#737777] uppercase mb-2">Input Format</h3>
-                                                <p className="text-sm font-mono">{currentQuestion.question.inputFormat}</p>
-                                            </div>
-                                        )}
-                                        {currentQuestion.question.outputFormat && (
-                                            <div className="bg-white p-4 rounded-lg border border-[#dedbd2]">
-                                                <h3 className="text-xs font-bold text-[#737777] uppercase mb-2">Output Format</h3>
-                                                <p className="text-sm font-mono">{currentQuestion.question.outputFormat}</p>
+                                                <h3 className="text-xs font-bold text-[#737777] uppercase mb-2">Constraints</h3>
+                                                <p className="text-sm font-mono text-[#171a1b]">{currentQuestion.question.constraints}</p>
                                             </div>
                                         )}
                                     </div>
-
-                                    {currentQuestion.question.constraints && (
-                                        <div className="bg-white p-4 rounded-lg border border-[#dedbd2]">
-                                            <h3 className="text-xs font-bold text-[#737777] uppercase mb-2">Constraints</h3>
-                                            <p className="text-sm font-mono">{currentQuestion.question.constraints}</p>
-                                        </div>
-                                    )}
+                                    <div className="lg:col-span-7 space-y-4">
 
                                     <div className="rounded-xl border border-[#303433] overflow-hidden bg-[#1e1e1e]">
                                         <div className="bg-[#2d2d2d] px-4 py-2 text-xs font-mono text-[#a0a19b] border-b border-[#303433] flex justify-between">
@@ -811,11 +814,16 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 flex justify-end">
+                                    </div>
+
+                                    <div className="mt-4 flex justify-between items-center lg:col-span-12">
+                                        <div className="text-xs text-[#a0a19b]">
+                                            * Note: Hidden test cases will be evaluated securely upon submission.
+                                        </div>
                                         <button
                                             onClick={() => handleRunCode(currentQuestion.id)}
                                             disabled={isRunning[currentQuestion.id]}
-                                            className="px-6 py-2 bg-[#2d2d2d] hover:bg-[#303433] border border-[#555955] rounded-lg font-semibold text-[#fbfaf6] transition-colors flex items-center gap-2 disabled:opacity-50"
+                                            className="px-6 py-2 bg-[#2d2d2d] hover:bg-[#303433] border border-[#555955] rounded-lg font-semibold text-[#fbfaf6] transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
                                         >
                                             {isRunning[currentQuestion.id] ? <Loader2 className="animate-spin" size={16} /> : null}
                                             Run Code
@@ -841,13 +849,22 @@ export function ExamInterface({ attempt }: { attempt: AttemptState }) {
                         Question {currentIndex + 1} of {questions.length}
                     </div>
 
-                    <button
-                        onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
-                        disabled={currentIndex === questions.length - 1}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-[#171a1b] text-white hover:bg-[#303433] disabled:opacity-50 transition-colors"
-                    >
-                        Next <ChevronRight size={18} />
-                    </button>
+                    {currentIndex === questions.length - 1 ? (
+                        <button
+                            onClick={() => setShowSubmitConfirm(true)}
+                            className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-sm"
+                        >
+                            Submit Assessment
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
+                            disabled={currentIndex === questions.length - 1}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-[#171a1b] text-white hover:bg-[#303433] disabled:opacity-50 transition-colors"
+                        >
+                            Next <ChevronRight size={18} />
+                        </button>
+                    )}
                 </div>
             </main>
         </div>
